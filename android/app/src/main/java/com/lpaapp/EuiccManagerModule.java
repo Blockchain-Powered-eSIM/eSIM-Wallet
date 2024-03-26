@@ -41,7 +41,7 @@ public class EuiccManagerModule extends ReactContextBaseJavaModule {
         return "EuiccManager"; // Name exposed to React Native
     }
 
-  // Example: Getting the EID
+    // Example: Getting the EID
     @ReactMethod 
     public void getEid(Promise promise) {
         try {

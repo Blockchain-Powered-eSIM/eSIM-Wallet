@@ -23,12 +23,12 @@ export default function App() {
     console.log('Print NativeModules.EuiccManagerModule: ', NativeModules.EuiccManagerModule);
 
     NativeModules.EuiccManagerModule.getEid()
-      .then((array: Array<any>) => {
+      .then((eid: any) => {
         setLogs([
           ...logs,
           {
             command: 'getEid',
-            result: JSON.stringify(array, null, 5),
+            result: JSON.stringify(eid, null, 5),
           },
         ]);
       })
