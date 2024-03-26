@@ -22,9 +22,16 @@ public class EuiccManagerModule extends ReactContextBaseJavaModule {
     private EuiccManager EuiccManagerObj;
 
     public EuiccManagerModule(ReactApplicationContext reactContext) {
-        super(reactContext); 
+        super(reactContext);
         TelephonyManagerObj = (TelephonyManager) reactContext.getSystemService(Context.TELEPHONY_SERVICE);
-        EuiccManagerObj = (EuiccManager) reactContext.getSystemService(Context.EUICC_SERVICE);
+
+        initEuiccManagerObj();
+    }
+
+    private void initEuiccManagerObj() {
+        if (EuiccManagerObj == null) {
+            EuiccManagerObj = (EuiccManager) reactContext.getSystemService(EUICC_SERVICE);
+        }
     }
 
     @Override
@@ -35,10 +42,11 @@ public class EuiccManagerModule extends ReactContextBaseJavaModule {
   // Example: Getting the EID
     @ReactMethod 
     public void getEid(Promise promise) {
-        String eid = EuiccManagerObj.getEid();
         try {
-            EuiccManager euiccManager = (EuiccManager) getReactApplicationContext().getSystemService(Context.EUICC_SERVICE);
-            if (euiccManager.isEnabled()) {
+            initEuiccManagerObj();
+            
+            if (EuiccManagerObj.isEnabled()) {
+                String eid = EuiccManagerObj.getEid();
                 promise.resolve(eid);
             } else {
                 promise.reject(E_NO_EID, "eUICC Manager is not enabled");
