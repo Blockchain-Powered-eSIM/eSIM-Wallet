@@ -47,6 +47,9 @@ public class EuiccManagerModule extends ReactContextBaseJavaModule {
         try {
             initEuiccManagerObj();
             
+            // int z = mReactContext.checkPermission("android.permission.READ_PRIVILIGED_PHONE_STATE", 0, 0);
+
+            // if (EuiccManagerObj.isEnabled() && z == 0) {
             if (EuiccManagerObj.isEnabled()) {
                 String eid = EuiccManagerObj.getEid();
                 promise.resolve(eid);
