@@ -7,7 +7,6 @@
 
 import React, { useRef, useState } from 'react';
 import { Button, NativeModules, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
-
 interface ILog {
   command: string;
   result: any;
@@ -19,28 +18,8 @@ export default function App() {
   const scrollViewRef = useRef<any>();
 
   const getEIDs = () => {
-    // Comment or remove the below line if the log works perfectly
-    console.log('Print NativeModules.EuiccManagerModule: ', NativeModules.EuiccManagerModule);
-
-    NativeModules.EuiccManagerModule.getEid()
-      .then((eid: any) => {
-        setLogs([
-          ...logs,
-          {
-            command: 'getEid',
-            result: JSON.stringify(eid, null, 5),
-          },
-        ]);
-      })
-      .catch((error: any) => {
-        setLogs([
-          ...logs,
-          {
-            command: 'getEidError',
-            result: JSON.stringify(error, null, 5),
-          },
-        ]);
-      });
+    const eid = NativeModules.EuiccManager.getEID();
+    console.log("eid: ", eid);
   };
 
   return (

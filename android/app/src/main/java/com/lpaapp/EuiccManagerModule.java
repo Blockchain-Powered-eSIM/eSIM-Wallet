@@ -18,11 +18,11 @@ public class EuiccManagerModule extends ReactContextBaseJavaModule {
     private final static String E_NO_MOBILE_NETWORK = "no_mobile_network";
     private final static String E_NO_NETWORK_OPERATOR = "no_network_operator";
     private final static String E_NO_EID = "no_eid_available";
-    private ReactApplicationContext mReactContext;
+    private static ReactApplicationContext mReactContext;
     private TelephonyManager TelephonyManagerObj;
     private EuiccManager EuiccManagerObj;
 
-    public EuiccManagerModule(ReactApplicationContext reactContext) {
+    EuiccManagerModule(ReactApplicationContext reactContext) {
         super(reactContext);
         TelephonyManagerObj = (TelephonyManager) reactContext.getSystemService(Context.TELEPHONY_SERVICE);
 
@@ -43,7 +43,7 @@ public class EuiccManagerModule extends ReactContextBaseJavaModule {
 
     // Example: Getting the EID
     @ReactMethod 
-    public void getEid(Promise promise) {
+    public void getEID(Promise promise) {
         try {
             initEuiccManagerObj();
             
