@@ -17,9 +17,14 @@ export default function App() {
 
   const scrollViewRef = useRef<any>();
 
-  const getEIDs = () => {
-    const eid = NativeModules.EuiccManager.getEID();
-    console.log("eid: ", eid);
+  const getEIDs = async () => {
+    try {
+      console.log("NativeModules.EuiccManager: ", NativeModules.EuiccManager);
+      const eid = await NativeModules.EuiccManager.getEID();
+      console.log("eid: ", eid);
+    } catch(e) {
+      console.log("error occurred: ", e);
+    }
   };
 
   return (
