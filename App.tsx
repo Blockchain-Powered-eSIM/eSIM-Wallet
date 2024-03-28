@@ -45,9 +45,9 @@ export default function App() {
   const getEIDs = async () => {
     try {
       //await requestPhoneStatePermission();
-      console.log("NativeModules.EuiccManager: ", NativeModules.EuiccManager);
+      //console.log("NativeModules.EuiccManager: ", NativeModules.EuiccManager);
       const eid = await NativeModules.EuiccManager.getEID();
-      console.log("eid: ", eid);
+      console.log("EID: ", eid);
     } catch(e) {
       console.log("error occurred: ", e);
     }
