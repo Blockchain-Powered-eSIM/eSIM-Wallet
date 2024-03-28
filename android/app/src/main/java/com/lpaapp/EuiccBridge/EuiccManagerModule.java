@@ -19,7 +19,7 @@ public class EuiccManagerModule extends ReactContextBaseJavaModule {
     private final static String E_NO_MOBILE_NETWORK = "no_mobile_network";
     private final static String E_NO_NETWORK_OPERATOR = "no_network_operator";
     private final static String E_NO_EID = "no_eid_available";
-    private final static String E_NO_CARRIR_PRIVILEGES = "no_carrier_privilge_available";
+    private final static String E_NO_CARRIER_PRIVILEGES = "no_carrier_privilege_available";
     private static ReactApplicationContext mReactContext;
     private TelephonyManager mTelephonyManager;
     private EuiccManager mEuiccManager;
@@ -29,10 +29,10 @@ public class EuiccManagerModule extends ReactContextBaseJavaModule {
         mTelephonyManager = (TelephonyManager) reactContext.getSystemService(Context.TELEPHONY_SERVICE);
 
         mReactContext = reactContext;
-        initmEuiccManager();
+        initEuiccManager();
     }
 
-    private void initmEuiccManager() {
+    private void initEuiccManager() {
         if (mEuiccManager == null) {
             mEuiccManager = (EuiccManager) mReactContext.getSystemService(Context.EUICC_SERVICE);
         }
@@ -48,7 +48,7 @@ public class EuiccManagerModule extends ReactContextBaseJavaModule {
     public void getEID(Promise promise) {
         //Log.d(TAG, "Carrier Privilege State is:" + mTelephonyManager.hasCarrierPrivileges());
         try {
-            initmEuiccManager();
+            initEuiccManager();
             if(mTelephonyManager.hasCarrierPrivileges()){
               if (mEuiccManager.isEnabled()) {
                   String eid = mEuiccManager.getEid();
@@ -57,7 +57,7 @@ public class EuiccManagerModule extends ReactContextBaseJavaModule {
                   promise.reject(E_NO_EID, "eUICC Manager is not enabled");
               }
             } else {
-                promise.reject(E_NO_CARRIR_PRIVILEGES, "hasCarrierPrivileges check failed");
+                promise.reject(E_NO_CARRIER_PRIVILEGES, "hasCarrierPrivileges check failed");
             }
         } catch (Exception e) {
             promise.reject("Error", e.getMessage()); 
