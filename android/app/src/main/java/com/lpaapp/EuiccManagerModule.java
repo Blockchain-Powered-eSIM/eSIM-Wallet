@@ -18,13 +18,22 @@ public class EuiccManagerModule extends ReactContextBaseJavaModule {
     private final static String E_NO_MOBILE_NETWORK = "no_mobile_network";
     private final static String E_NO_NETWORK_OPERATOR = "no_network_operator";
     private final static String E_NO_EID = "no_eid_available";
+    private static ReactApplicationContext mReactContext;
     private TelephonyManager TelephonyManagerObj;
     private EuiccManager EuiccManagerObj;
 
-    public EuiccManagerModule(ReactApplicationContext reactContext) {
-        super(reactContext); 
+    EuiccManagerModule(ReactApplicationContext reactContext) {
+        super(reactContext);
         TelephonyManagerObj = (TelephonyManager) reactContext.getSystemService(Context.TELEPHONY_SERVICE);
-        EuiccManagerObj = (EuiccManager) reactContext.getSystemService(Context.EUICC_SERVICE);
+
+        mReactContext = reactContext;
+        initEuiccManagerObj();
+    }
+
+    private void initEuiccManagerObj() {
+        if (EuiccManagerObj == null) {
+            EuiccManagerObj = (EuiccManager) mReactContext.getSystemService(Context.EUICC_SERVICE);
+        }
     }
 
     @Override
@@ -32,13 +41,17 @@ public class EuiccManagerModule extends ReactContextBaseJavaModule {
         return "EuiccManager"; // Name exposed to React Native
     }
 
-  // Example: Getting the EID
+    // Example: Getting the EID
     @ReactMethod 
-    public void getEid(Promise promise) {
-        String eid = EuiccManagerObj.getEid();
+    public void getEID(Promise promise) {
         try {
-            EuiccManager euiccManager = (EuiccManager) getReactApplicationContext().getSystemService(Context.EUICC_SERVICE);
-            if (euiccManager.isEnabled()) {
+            initEuiccManagerObj();
+            
+            // int z = mReactContext.checkPermission("android.permission.READ_PRIVILIGED_PHONE_STATE", 0, 0);
+
+            // if (EuiccManagerObj.isEnabled() && z == 0) {
+            if (EuiccManagerObj.isEnabled()) {
+                String eid = EuiccManagerObj.getEid();
                 promise.resolve(eid);
             } else {
                 promise.reject(E_NO_EID, "eUICC Manager is not enabled");
