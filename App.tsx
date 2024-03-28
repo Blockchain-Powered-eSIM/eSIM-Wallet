@@ -6,11 +6,36 @@
  */
 
 import React, { useRef, useState } from 'react';
-import { Button, NativeModules, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {PERMISSIONS, request} from 'react-native-permissions';
+import { Button, NativeModules, PermissionsAndroid, StatusBar, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 interface ILog {
   command: string;
   result: any;
 }
+/** const requestPhoneStatePermission = async () => {
+*   try {
+*     const granted = await PermissionsAndroid.request(
+*       PermissionsAndroid.READ_PHONE_STATE,
+*       {
+*         title: 'Phone State Permission',
+*         message:
+*           'LPA App needs acces to your phone state ' +
+*           'Grant permission for accessing eid',
+*         buttonNeutral: 'Ask Me Later',
+*         buttonNegative: 'Cancel',
+*         buttonPositive: 'OK',
+*       },
+*     );
+*     if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+*       console.log('Phone State Access Granted');
+*     } else {
+*       console.log('Permission denied');
+*     }
+*   } catch (err) {
+*     console.log(err);
+*   }
+* };
+*/
 
 export default function App() {
   const [logs, setLogs] = useState<Array<ILog>>([]);
@@ -19,6 +44,7 @@ export default function App() {
 
   const getEIDs = async () => {
     try {
+      //await requestPhoneStatePermission();
       console.log("NativeModules.EuiccManager: ", NativeModules.EuiccManager);
       const eid = await NativeModules.EuiccManager.getEID();
       console.log("eid: ", eid);
