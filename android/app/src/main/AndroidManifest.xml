@@ -1,7 +1,9 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    package="com.lpaapp"> <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+  package="com.lpaapp"> 
+    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+    <uses-permission android:name="android.permission.READ_PRECISE_PHONE_STATE"/>
     <uses-permission android:name="android.permission.READ_PRIVILEGED_PHONE_STATE"/>
-
+    <uses-permission android:name="android.permission.WRITE_EMBEDDED_SUBSCRIPTIONS"/> 
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
@@ -19,11 +21,15 @@
         android:launchMode="singleTask"
         android:windowSoftInputMode="adjustResize"
         android:exported="true">
-        <intent-filter>
+        <intent-filter android:priority="100">
             <action android:name="android.intent.action.MAIN" />
             <action android:name="android.service.carrier.CarrierService"/>
             <action android:name="android.service.carrier.ConfigService"/>
+            <action android:name="android.service.euicc.EuiccService" />
+            <action android:name="android.service.euicc.action.MANAGE_EMBEDDED_SUBSCRIPTIONS" />
+            <action android:name="android.service.euicc.action.PROVISION_EMBEDDED_SUBSCRIPTION" />
             <category android:name="android.intent.category.LAUNCHER" />
+            <category android:name="android.service.euicc.category.EUICC_UI" />
         </intent-filter>
       </activity>
     </application>
