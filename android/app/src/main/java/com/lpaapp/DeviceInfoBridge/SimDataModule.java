@@ -1,0 +1,239 @@
+package com.lpaapp.DeviceInfoBridge;
+
+import static android.content.Context.EUICC_SERVICE;
+
+import android.app.Activity;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Bundle;
+import android.telephony.euicc.EuiccManager;
+import android.app.PendingIntent;
+import android.content.Intent;
+import android.telephony.euicc.DownloadableSubscription;
+import android.content.IntentFilter;
+import android.content.Context;
+import android.content.ContextWrapper;
+import android.content.BroadcastReceiver;
+import android.telecom.PhoneAccountHandle;
+import android.telecom.TelecomManager;
+import android.telephony.TelephonyManager;
+import android.telephony.SubscriptionInfo;
+import android.telephony.SubscriptionManager;
+import android.content.Intent;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
+
+import com.facebook.react.bridge.Promise;
+import com.facebook.react.bridge.ReactApplicationContext;
+import com.facebook.react.bridge.ReactContextBaseJavaModule;
+import com.facebook.react.bridge.ReactMethod;
+import com.facebook.react.module.annotations.ReactModule;
+import com.facebook.react.bridge.*;
+
+import java.util.List;
+
+@ReactModule(name = SimDataModule.NAME)
+public class SimDataModule extends ReactContextBaseJavaModule {
+  public static final String NAME = "SimData";
+  private String ACTION_DOWNLOAD_SUBSCRIPTION = "download_subscription";
+  private ReactContext mReactContext;
+
+  @RequiresApi(api = Build.VERSION_CODES.P)
+  private EuiccManager mEuiccManager;
+
+  public SimDataModule(ReactApplicationContext reactContext) {
+    super(reactContext);
+    mReactContext = reactContext;
+  }
+
+  @RequiresApi(api = Build.VERSION_CODES.P)
+  private void initEuiccManager() {
+    if (mEuiccManager == null) {
+      mEuiccManager = (EuiccManager) mReactContext.getSystemService(EUICC_SERVICE);
+    }
+  }
+
+  @Override
+  @NonNull
+  public String getName() {
+    return NAME;
+  }
+
+  @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP_MR1)
+  @ReactMethod
+  public void getSimCardsNative(Promise promise) {
+    WritableArray simCardsList = new WritableNativeArray();
+
+    TelephonyManager mTelephonyManager = (TelephonyManager) mReactContext.getSystemService(Context.TELEPHONY_SERVICE);
+    try {
+      SubscriptionManager mSubscriptionManager = (SubscriptionManager) mReactContext.getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE);
+      if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP_MR1) {
+        int activeSubscriptionInfoCount = mSubscriptionManager.getActiveSubscriptionInfoCount();
+        int activeSubscriptionInfoCountMax = mSubscriptionManager.getActiveSubscriptionInfoCountMax();
+
+        List<SubscriptionInfo> subscriptionInfos = mSubscriptionManager.getActiveSubscriptionInfoList();
+
+        for (SubscriptionInfo subInfo : subscriptionInfos) {
+          WritableMap simCard = Arguments.createMap();
+
+          String number = "";
+          if(android.os.Build.VERSION.SDK_INT >= 33) {
+            number = mSubscriptionManager.getPhoneNumber(subInfo.getSubscriptionId());
+          } else {
+            number = subInfo.getNumber();
+          } 
+
+          CharSequence carrierName = subInfo.getCarrierName();
+          String mobileOperator = subInfo.getSimOperator();
+          String countryIso = subInfo.getCountryIso();
+          int dataRoaming = subInfo.getDataRoaming(); // 1 is enabled ; 0 is disabled
+          CharSequence displayName = subInfo.getDisplayName();
+          String iccId = subInfo.getIccId();
+          int mcc = subInfo.getMcc();
+          int mnc = subInfo.getMnc();
+          int simSlotIndex = subInfo.getSimSlotIndex();
+          int subscriptionId = subInfo.getSubscriptionId();
+          int networkRoaming = mTelephonyManager.isNetworkRoaming() ? 1 : 0;
+
+          simCard.putString("carrierName", carrierName.toString());
+          simCard.putString("operatorName", mobileOperator.toString());
+          simCard.putString("displayName", displayName.toString());
+          simCard.putString("isoCountryCode", countryIso);
+          simCard.putInt("mobileCountryCode", mcc);
+          simCard.putInt("mobileNetworkCode", mnc);
+          simCard.putInt("isNetworkRoaming", networkRoaming);
+          simCard.putInt("isDataRoaming", dataRoaming);
+          simCard.putInt("simSlotIndex", simSlotIndex);
+          simCard.putString("phoneNumber", number);
+          simCard.putString("simSerialNumber", iccId);
+          simCard.putInt("subscriptionId", subscriptionId);
+
+          simCardsList.pushMap(simCard);
+        }
+      } else {
+        promise.reject("0", "This functionality is not supported before Android 5.1 (22)");
+      }
+    } catch (Exception e) {
+      promise.reject("1", "Something goes wrong to fetch simcards: " + e.getLocalizedMessage());
+    }
+    promise.resolve(simCardsList);
+  }
+
+  @RequiresApi(api = Build.VERSION_CODES.P)
+  @ReactMethod
+  public void isEsimSupported(Promise promise) {
+    initEuiccManager();
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && mEuiccManager != null) {
+      promise.resolve(mEuiccManager.isEnabled());
+    } else {
+      promise.resolve(false);
+    }
+    return;
+  }
+
+  @RequiresApi(api = Build.VERSION_CODES.P)
+  private void handleResolvableError(Promise promise, Intent intent) {
+    try {
+      // Resolvable error, attempt to resolve it by a user action
+      int resolutionRequestCode = 3;
+      PendingIntent callbackIntent = PendingIntent.getBroadcast(mReactContext, resolutionRequestCode,
+          new Intent(ACTION_DOWNLOAD_SUBSCRIPTION), PendingIntent.FLAG_UPDATE_CURRENT |
+              PendingIntent.FLAG_MUTABLE);
+
+      mEuiccManager.startResolutionActivity(mReactContext.getCurrentActivity(), resolutionRequestCode, intent, callbackIntent);
+    } catch (Exception e) {
+      promise.reject("3", "EMBEDDED_SUBSCRIPTION_RESULT_RESOLVABLE_ERROR - Can't setup eSim due to Activity error "
+          + e.getLocalizedMessage());
+    }
+  }
+
+  private boolean checkCarrierPrivileges() {
+    TelephonyManager mTelephonyManager = (TelephonyManager) mReactContext.getSystemService(Context.TELEPHONY_SERVICE);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
+      return mTelephonyManager.hasCarrierPrivileges();
+    } else {
+      return false;
+    }
+  }
+
+  // Ported form : https://github.com/odemolliens/react-native-sim-cards-manager/tree/develop
+  // Trying to setup a dummy eSIM setup function (input is a config const) 
+  // EX: const config = {
+  //    address: "";
+  //    confirmationCode: "";
+  //    eid: "";
+  //    iccid: "";
+  //    matchingId: "";
+  //    oid: "";
+  //  }
+  // Which can provide a placeholder method to test other parts of the app till the time Carrier Privileges are not acquired.
+  // FIXME : Change Error conditions to setup dummy esim setup flow
+  @RequiresApi(api = Build.VERSION_CODES.P)
+  @ReactMethod
+  public void setupEsim(ReadableMap config, Promise promise) {
+    
+    if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.P) {
+      promise.reject("0", "EuiccManager is not available or before Android 9 (API 28)");
+      return;
+    }
+
+    initEuiccManager();
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && mEuiccManager != null && !mEuiccManager.isEnabled()) {
+      promise.reject("1", "The device doesn't support a cellular plan (EuiccManager is not available)");
+      return;
+    }
+
+    BroadcastReceiver receiver = new BroadcastReceiver() {
+
+      @Override
+      public void onReceive(Context context, Intent intent) {
+        if (!ACTION_DOWNLOAD_SUBSCRIPTION.equals(intent.getAction())) {
+          promise.reject("3",
+              "Can't setup eSim due to wrong Intent:" + intent.getAction() + " instead of "
+                  + ACTION_DOWNLOAD_SUBSCRIPTION);
+          return;
+        }
+        int resultCode = getResultCode();
+        if (resultCode == EuiccManager.EMBEDDED_SUBSCRIPTION_RESULT_RESOLVABLE_ERROR && mEuiccManager != null) {
+          handleResolvableError(promise, intent);
+        } else if (resultCode == EuiccManager.EMBEDDED_SUBSCRIPTION_RESULT_OK) {
+          promise.resolve(true);
+        } else if (resultCode == EuiccManager.EMBEDDED_SUBSCRIPTION_RESULT_ERROR) {
+          // Embedded Subscription Error
+          promise.reject("2",
+              "EMBEDDED_SUBSCRIPTION_RESULT_ERROR - Can't add an Esim subscription");
+        } else {
+          // Unknown Error
+          promise.reject("3",
+              "Can't add an Esim subscription due to unknown error, resultCode is:" + String.valueOf(resultCode));
+        }
+      }
+    };
+
+   // Changes for registering reciever for Android 14
+   if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+  //    mReactContext.registerReceiver(receiver, new IntentFilter(ACTION_DOWNLOAD_SUBSCRIPTION), RECEIVER_NOT_EXPORTED);
+  //  }else {
+      mReactContext.registerReceiver(
+              receiver,
+              new IntentFilter(ACTION_DOWNLOAD_SUBSCRIPTION),
+              null,
+              null);
+    }
+
+    DownloadableSubscription sub = DownloadableSubscription.forActivationCode(
+        /* Passed from react side */
+        config.getString("confirmationCode"));
+
+    PendingIntent callbackIntent = PendingIntent.getBroadcast(
+        mReactContext,
+        0,
+        new Intent(ACTION_DOWNLOAD_SUBSCRIPTION),
+        PendingIntent.FLAG_UPDATE_CURRENT |
+            PendingIntent.FLAG_MUTABLE);
+
+    mEuiccManager.downloadSubscription(sub, true, callbackIntent);
+  }
+}
