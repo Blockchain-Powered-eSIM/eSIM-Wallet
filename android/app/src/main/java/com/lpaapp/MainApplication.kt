@@ -16,6 +16,7 @@ import com.facebook.soloader.SoLoader
 
 import com.lpaapp.EuiccBridge.EuiccManagerPackage
 import com.lpaapp.DeviceInfoBridge.SimDataPackage
+import com.lpaapp.IdentityManager.IdentityManagerPackage
 
 class MainApplication : Application(), ReactApplication {
 
@@ -27,6 +28,7 @@ class MainApplication : Application(), ReactApplication {
               // add(MyReactNativePackage())
               add(EuiccManagerPackage())
               add(SimDataPackage())
+              add(IdentityManagerPackage())
             }
 
         override fun getJSMainModuleName(): String = "index"
