@@ -21,6 +21,10 @@ import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.Promise;
 
 import java.time.Instant;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.util.UUID;
 
 public class IdentityManagerModule extends ReactContextBaseJavaModule {
 
@@ -80,6 +84,50 @@ public class IdentityManagerModule extends ReactContextBaseJavaModule {
       return new Pair<>(height, width);
     }
 
+    private String bytesToHex(byte[] bytes) {
+        StringBuilder hexString = new StringBuilder();
+        for (byte b : bytes) {
+            String hex = Integer.toHexString(0xff & b);
+            if (hex.length() == 1) {
+                hexString.append('0');
+            }
+            hexString.append(hex);
+        }
+        return hexString.toString();
+    }
+
+    private String hash(String input) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hashBytes = digest.digest(input.getBytes());
+            return bytesToHex(hashBytes);
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private String fetchPhoneNumber() {
+      String phoneNumber = null; // Initialize for potential failure 
+        try {
+            getDefaultPhoneNumber(new Promise() {
+                @Override
+                public void resolve(Object result) {
+                    phoneNumber = (String) result; // Cast and store if successful
+                }
+
+                @Override
+                public void reject(String code, String message) {
+                    // Handle error cases 
+                    System.out.println("Error fetching phone number: " + code + " - " + message);  // Replace with proper error logging
+                }
+            });
+        } catch (Exception e) {
+            System.out.println("Exception calling getDefaultPhoneNumber: " + e.getMessage());  // Replace with proper error logging
+        }
+      return phoneNumber;   
+    }
+
     // Example: Getting the Phone number for default Subscription
     // TODO : Add prompt to select the subscription user wants to use 
     @ReactMethod 
@@ -115,5 +163,31 @@ public class IdentityManagerModule extends ReactContextBaseJavaModule {
       } else {
           promise.reject(E_NO_PHONE_NUMBER_PERMISSION, "READ_PHONE_NUMBERS permission not granted");
       }
+    }
+
+    @ReactMethod
+    public void generateIdentifier() {
+        // Get system time
+        long timestamp = getUnixTimestamp();
+
+        // Get hardware identifiers
+        Pair<Integer,Instant> screenResolution = getScreenResolution();
+        height = screenResolution.first;
+        width = screenResolution.second;
+        String phoneNumber = fetchPhoneNumber();
+
+        // Generate random bytes using CSPRNG
+        SecureRandom random = new SecureRandom();
+        byte[] randomBytes = new byte[16]; // 128 bits
+        random.nextBytes(randomBytes);
+
+        // Combine entropy: system time, hardware identifiers, and random bytes
+        String combinedEntropy = timestamp + height + width + phoneNumber + bytesToHex(randomBytes);
+
+        // Apply hash function to the combined entropy
+        String identifier = hash(combinedEntropy);
+
+        // Emit the generated identifier to JavaScript
+        getReactApplicationContext().getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("IdentifierGenerated", identifier);
     }
 }
