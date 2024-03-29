@@ -7,7 +7,6 @@
 
 import React, { useRef, useState } from 'react';
 import { 
-  Button, 
   NativeModules, 
   SafeAreaView, 
   ScrollView, 
@@ -17,6 +16,7 @@ import {
   TouchableOpacity
 } from 'react-native';
 import Modal from "react-native-modal";
+import { Button } from './components/Button';
 
 interface ILog {
   command: string;
