@@ -21,12 +21,18 @@ import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.Promise;
 
 import java.time.Instant;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.time.Duration;
+import java.util.UUID;
 
 public class IdentityManagerModule extends ReactContextBaseJavaModule {
 
     private final static String TAG = IdentityManagerModule.class.getCanonicalName();
     private final static String E_NO_DEFAULT_SUBSCRIPTION = "no_defalut_subscription";
     private final static String E_NO_PHONE_NUMBER_PERMISSION = "no_phoneNumber_permission_available";
+    private final static String E_FAILED_IDENTITY_GENERATION = "identity_generation_failed";
     private static ReactApplicationContext mReactContext;
     private TelephonyManager mTelephonyManager;
     private SubscriptionManager mSubscriptionManager;
@@ -80,6 +86,29 @@ public class IdentityManagerModule extends ReactContextBaseJavaModule {
       return new Pair<>(height, width);
     }
 
+    private String bytesToHex(byte[] bytes) {
+        StringBuilder hexString = new StringBuilder();
+        for (byte b : bytes) {
+            String hex = Integer.toHexString(0xff & b);
+            if (hex.length() == 1) {
+                hexString.append('0');
+            }
+            hexString.append(hex);
+        }
+        return hexString.toString();
+    }
+
+    private String hash(String input) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hashBytes = digest.digest(input.getBytes());
+            return bytesToHex(hashBytes);
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+  
     // Example: Getting the Phone number for default Subscription
     // TODO : Add prompt to select the subscription user wants to use 
     @ReactMethod 
@@ -115,5 +144,59 @@ public class IdentityManagerModule extends ReactContextBaseJavaModule {
       } else {
           promise.reject(E_NO_PHONE_NUMBER_PERMISSION, "READ_PHONE_NUMBERS permission not granted");
       }
+    }
+
+    // TODO : pass phone number to identitiy genetion method internally in the class
+    //private String fetchPhoneNumber() {
+    //  final String[] phoneNumber = new String[1];
+  
+    //  Thread thread = new Thread(() -> {
+    //    try {
+    //      phoneNumber[0] = getDefaultPhoneNumber();
+    //    } catch (Exception e) {
+    //        // Handle the exception 
+    //        System.err.println("Error getting phone number: " + e.getMessage()); 
+    //        phoneNumber[0] = null; 
+    //    }
+    //  });
+    //  thread.start(); 
+    //  try {
+    //      thread.join(); // Wait for the thread to finish
+    //  } catch (InterruptedException e) {
+    //      // Handle the interruption appropriately
+    //      System.err.println("Thread interrupted: " + e.getMessage());
+    //      phoneNumber[0] = null;  // Indicate an error
+    //  }
+    //  return phoneNumber[0]; 
+    //}
+
+    @ReactMethod
+    public void generateIdentifier(String phoneNumber, Promise promise) {
+        // Get system time
+        long timestamp = getUnixTimestamp();
+
+        // Get hardware identifiers
+        Pair<Integer,Integer> screenResolution = getScreenResolution();
+        int height = screenResolution.first;
+        int width = screenResolution.second;
+
+        // Generate random bytes using CSPRNG
+        SecureRandom random = new SecureRandom();
+        byte[] randomBytes = new byte[16]; // 128 bits
+        random.nextBytes(randomBytes);
+
+        // Combine entropy: system time, hardware identifiers, and random bytes
+        String combinedEntropy = timestamp + height + width + phoneNumber + bytesToHex(randomBytes);
+
+        // Apply hash function to the combined entropy
+        String identifier = hash(combinedEntropy);
+
+        // Use emit method in the future rather than prmoises
+        // getReactApplicationContext().getJSModule(IdentityManagerModule.RCTDeviceEventEmitter.class).emit("IdentifierGenerated", identifier);
+        if(identifier != null && identifier != ""){
+          promise.resolve(identifier);
+        } else {
+          promise.reject(E_FAILED_IDENTITY_GENERATION, "Identity generation method did not work as expected");
+        }
     }
 }
