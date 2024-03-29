@@ -24,6 +24,7 @@ import java.time.Instant;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.util.UUID;
 
 public class IdentityManagerModule extends ReactContextBaseJavaModule {
@@ -31,6 +32,7 @@ public class IdentityManagerModule extends ReactContextBaseJavaModule {
     private final static String TAG = IdentityManagerModule.class.getCanonicalName();
     private final static String E_NO_DEFAULT_SUBSCRIPTION = "no_defalut_subscription";
     private final static String E_NO_PHONE_NUMBER_PERMISSION = "no_phoneNumber_permission_available";
+    private final static String E_FAILED_IDENTITY_GENERATION = "identity_generation_failed";
     private static ReactApplicationContext mReactContext;
     private TelephonyManager mTelephonyManager;
     private SubscriptionManager mSubscriptionManager;
@@ -106,28 +108,7 @@ public class IdentityManagerModule extends ReactContextBaseJavaModule {
             return null;
         }
     }
-
-    private String fetchPhoneNumber() {
-      String phoneNumber = null; // Initialize for potential failure 
-        try {
-            getDefaultPhoneNumber(new Promise() {
-                @Override
-                public void resolve(Object result) {
-                    phoneNumber = (String) result; // Cast and store if successful
-                }
-
-                @Override
-                public void reject(String code, String message) {
-                    // Handle error cases 
-                    System.out.println("Error fetching phone number: " + code + " - " + message);  // Replace with proper error logging
-                }
-            });
-        } catch (Exception e) {
-            System.out.println("Exception calling getDefaultPhoneNumber: " + e.getMessage());  // Replace with proper error logging
-        }
-      return phoneNumber;   
-    }
-
+  
     // Example: Getting the Phone number for default Subscription
     // TODO : Add prompt to select the subscription user wants to use 
     @ReactMethod 
@@ -165,16 +146,39 @@ public class IdentityManagerModule extends ReactContextBaseJavaModule {
       }
     }
 
+    // TODO : pass phone number to identitiy genetion method internally in the class
+    //private String fetchPhoneNumber() {
+    //  final String[] phoneNumber = new String[1];
+  
+    //  Thread thread = new Thread(() -> {
+    //    try {
+    //      phoneNumber[0] = getDefaultPhoneNumber();
+    //    } catch (Exception e) {
+    //        // Handle the exception 
+    //        System.err.println("Error getting phone number: " + e.getMessage()); 
+    //        phoneNumber[0] = null; 
+    //    }
+    //  });
+    //  thread.start(); 
+    //  try {
+    //      thread.join(); // Wait for the thread to finish
+    //  } catch (InterruptedException e) {
+    //      // Handle the interruption appropriately
+    //      System.err.println("Thread interrupted: " + e.getMessage());
+    //      phoneNumber[0] = null;  // Indicate an error
+    //  }
+    //  return phoneNumber[0]; 
+    //}
+
     @ReactMethod
-    public void generateIdentifier() {
+    public void generateIdentifier(String phoneNumber, Promise promise) {
         // Get system time
         long timestamp = getUnixTimestamp();
 
         // Get hardware identifiers
-        Pair<Integer,Instant> screenResolution = getScreenResolution();
-        height = screenResolution.first;
-        width = screenResolution.second;
-        String phoneNumber = fetchPhoneNumber();
+        Pair<Integer,Integer> screenResolution = getScreenResolution();
+        int height = screenResolution.first;
+        int width = screenResolution.second;
 
         // Generate random bytes using CSPRNG
         SecureRandom random = new SecureRandom();
@@ -187,7 +191,12 @@ public class IdentityManagerModule extends ReactContextBaseJavaModule {
         // Apply hash function to the combined entropy
         String identifier = hash(combinedEntropy);
 
-        // Emit the generated identifier to JavaScript
-        getReactApplicationContext().getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("IdentifierGenerated", identifier);
+        // Use emit method in the future rather than prmoises
+        // getReactApplicationContext().getJSModule(IdentityManagerModule.RCTDeviceEventEmitter.class).emit("IdentifierGenerated", identifier);
+        if(identifier != null && identifier != ""){
+          promise.resolve(identifier);
+        } else {
+          promise.reject(E_FAILED_IDENTITY_GENERATION, "Identity generation method did not work as expected");
+        }
     }
 }
