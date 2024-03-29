@@ -15,8 +15,8 @@ import {
   View,
   TouchableOpacity
 } from 'react-native';
-import Modal from "react-native-modal";
 import { Button } from './components/Button';
+import { Modal } from './components/Modal';
 
 interface ILog {
   command: string;
