@@ -48,14 +48,19 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Tab One</Text>
+      <Text style={styles.title}>Homepage</Text>
       <View style={styles.separator} />
       <Button title="button" onPress={toggleModalVisibility} />
       <Modal isVisible={isModalVisible}>
-        <View style={{ flex: 1 }}>
-          <Text>Hello!</Text>
-          <Button title="Hide modal" onPress={toggleModalVisibility} />
-        </View>
+        <Modal.Container>
+          <Modal.Header title="Device Data" />
+          <Modal.Body>
+            <Text style={styles.text}>Device related data goes here</Text>
+            </Modal.Body>
+          <Modal.Footer>
+            <Button title="Back" onPress={toggleModalVisibility} />
+          </Modal.Footer>
+        </Modal.Container>
       </Modal>
     </View>
   );
