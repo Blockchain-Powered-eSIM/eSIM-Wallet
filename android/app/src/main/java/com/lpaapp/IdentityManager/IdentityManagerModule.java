@@ -1,6 +1,7 @@
 package com.lpaapp.IdentityManager;
 
 import android.Manifest;
+import android.os.Build;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.telephony.TelephonyManager;
@@ -33,6 +34,7 @@ public class IdentityManagerModule extends ReactContextBaseJavaModule {
     private final static String E_NO_DEFAULT_SUBSCRIPTION = "no_defalut_subscription";
     private final static String E_NO_PHONE_NUMBER_PERMISSION = "no_phoneNumber_permission_available";
     private final static String E_FAILED_IDENTITY_GENERATION = "identity_generation_failed";
+    private final static String E_UNSUPPORTED_API_LEVEL = "android_version_unsupported";
     private static ReactApplicationContext mReactContext;
     private TelephonyManager mTelephonyManager;
     private SubscriptionManager mSubscriptionManager;
@@ -113,36 +115,42 @@ public class IdentityManagerModule extends ReactContextBaseJavaModule {
     // TODO : Add prompt to select the subscription user wants to use 
     @ReactMethod 
     public void getDefaultPhoneNumber(Promise promise) {
-        if (ActivityCompat.checkSelfPermission(mReactContext, Manifest.permission.READ_PHONE_NUMBERS) == PackageManager.PERMISSION_GRANTED) {
-          initSubscriptionManager();
-          int defaultSubscriptionID = mSubscriptionManager.getDefaultSubscriptionId();
-          SubscriptionInfo defaultSubscription = mSubscriptionManager.getActiveSubscriptionInfo(defaultSubscriptionID);
-          if (defaultSubscription != null) {
-              int subscriptionId = defaultSubscription.getSubscriptionId();
-              String phoneNumber = mSubscriptionManager.getPhoneNumber(subscriptionId);
-              promise.resolve(phoneNumber); // Return phone number if found
-          } else {
-              promise.reject(E_NO_DEFAULT_SUBSCRIPTION, "Default Subscription is null"); // Promise reject if no default subscription
-          }
-          // FALLBACK
-          // A way to get all valid subscriptions and pick one phone number from it if default subscription is not valid.
-          //List<SubscriptionInfo> activeSubscriptions = mSubscriptionManager.getActiveSubscriptionInfoList();
-          //if (activeSubscriptions != null) {
-          //    for (SubscriptionInfo info : activeSubscriptions) {
-          //        int subscriptionId = info.getSubscriptionId();
-          //        String phoneNumber = mSubscriptionManager.getPhoneNumber(subscriptionId);
-      
-          //        if (phoneNumber != null && !phoneNumber.isEmpty()) {
-          //            // Use the retrieved phoneNumber
-          //        } else {
-          //            // Handle case where phone number wasn't found for this subscription
-          //        }
-          //    }
-          //} else {
-          //    // Handle case where there are no active subscriptions
-          //}
+      if (ActivityCompat.checkSelfPermission(mReactContext, Manifest.permission.READ_PHONE_NUMBERS) == PackageManager.PERMISSION_GRANTED) {
+        initSubscriptionManager();
+        int defaultSubscriptionID = mSubscriptionManager.getDefaultSubscriptionId();
+        SubscriptionInfo defaultSubscription = mSubscriptionManager.getActiveSubscriptionInfo(defaultSubscriptionID);
+        if (defaultSubscription != null) {
+            String phoneNumber;
+            int subscriptionId = defaultSubscription.getSubscriptionId();
+            // getPhoneNumber() method only works for android 13 and above
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+              phoneNumber = mSubscriptionManager.getPhoneNumber(subscriptionId);
+            } else {
+              phoneNumber = mTelephonyManager.getLine1Number();
+            }
+            promise.resolve(phoneNumber);
+        } else {
+            promise.reject(E_NO_DEFAULT_SUBSCRIPTION, "Default Subscription is null"); // Promise reject if no default subscription
+        }
+        // FALLBACK
+        // A way to get all valid subscriptions and pick one phone number from it if default subscription is not valid.
+        //List<SubscriptionInfo> activeSubscriptions = mSubscriptionManager.getActiveSubscriptionInfoList();
+        //if (activeSubscriptions != null) {
+        //    for (SubscriptionInfo info : activeSubscriptions) {
+        //        int subscriptionId = info.getSubscriptionId();
+        //        String phoneNumber = mSubscriptionManager.getPhoneNumber(subscriptionId);
+     
+        //        if (phoneNumber != null && !phoneNumber.isEmpty()) {
+        //            // Use the retrieved phoneNumber
+        //        } else {
+        //            // Handle case where phone number wasn't found for this subscription
+        //        }
+        //    }
+        //} else {
+        //    // Handle case where there are no active subscriptions
+        //}
       } else {
-          promise.reject(E_NO_PHONE_NUMBER_PERMISSION, "READ_PHONE_NUMBERS permission not granted");
+         promise.reject(E_NO_PHONE_NUMBER_PERMISSION, "READ_PHONE_NUMBERS permission not granted");
       }
     }
 

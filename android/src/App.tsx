@@ -82,7 +82,6 @@ export default function App() {
 
   const getUniqueIdentifier = async () => {
     try {
-      console.log("What???");
       const phNumber = await NativeModules.IdentityManager.getDefaultPhoneNumber();
       console.log("phNumber: ", phNumber);
 
