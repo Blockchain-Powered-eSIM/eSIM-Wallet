@@ -112,7 +112,7 @@ public class IdentityManagerModule extends ReactContextBaseJavaModule {
     }
   
     // Example: Getting the Phone number for default Subscription
-    // TODO : Add prompt to select the subscription user wants to use 
+    // TODO: Add prompt to select the subscription user wants to use 
     @ReactMethod 
     public void getDefaultPhoneNumber(Promise promise) {
       if (ActivityCompat.checkSelfPermission(mReactContext, Manifest.permission.READ_PHONE_NUMBERS) == PackageManager.PERMISSION_GRANTED) {
