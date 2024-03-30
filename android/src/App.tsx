@@ -19,6 +19,8 @@ import {
 import { Button } from './components/Button';
 import { Modal } from './components/Modal';
 
+import { MMKVLoader, useMMKVStorage } from 'react-native-mmkv-storage';
+
 interface ILog {
   command: string;
   result: any;
@@ -28,11 +30,22 @@ export default function App() {
   const [mapping, setMapping] = useState(null);
   const [isModalVisible, setIsModalVisible] = React.useState(false);
   const [identifier, setIdentifier] = React.useState('');
+  const storageObj = new MMKVLoader().initialize();
 
   const toggleModalVisibility = () => {
     setIsModalVisible(visible => !visible);
   }
 
+  // Store and retrieve data
+  //TODO Handle other datatypes
+  const storeData = (key, value) => {
+    storageObj.setString(key, value); 
+  };
+
+  const retrieveData = (key) => {
+    return storageObj.getString(key);
+  }
+  
   const getEIDs = async () => {
     try {
       const eid = await NativeModules.EuiccManager.getEID();
@@ -82,14 +95,14 @@ export default function App() {
 
   const getUniqueIdentifier = async () => {
     try {
-      console.log("What???");
       const phNumber = await NativeModules.IdentityManager.getDefaultPhoneNumber();
       console.log("phNumber: ", phNumber);
 
       const uniqueIdentifier = await NativeModules.IdentityManager.generateIdentifier(phNumber);
       console.log("uniqueIdentifier: ", uniqueIdentifier);
+      storeData(phNumber, uniqueIdentifier);
 
-      return uniqueIdentifier;
+      return retrieveData(phNumber);
     } catch (error) {
       console.log('error', error);
       return 'Error';
