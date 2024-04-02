@@ -37,7 +37,7 @@ export default function App() {
   }
 
   // Store and retrieve data
-  //TODO Handle other datatypes
+  // TODO: Handle other datatypes
   const storeData = (key, value) => {
     storageObj.setString(key, value); 
   };
@@ -57,24 +57,14 @@ export default function App() {
 
   const requestPhoneStatePermission = async () => {
     try {
-      console.log('Asking permission');
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.READ_PHONE_STATE,
-        {
-          title: 'Read Phone Number Permission',
-          message:
-            'LPA App needs acces to your phone state ' +
-            'Grant permission for accessing eid',
-          buttonNeutral: 'Ask Me Later',
-          buttonNegative: 'Cancel',
-          buttonPositive: 'OK',
-        },
-      );
-      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-        console.log('Phone State Access Granted');
-      } else {
-        console.log('Permission denied');
-      }
+      await PermissionsAndroid.requestMultiple([PermissionsAndroid.PERMISSIONS.READ_PHONE_STATE, PermissionsAndroid.PERMISSIONS.READ_PHONE_NUMBERS]).then((result) => {
+          if (result['android.permission.READ_PHONE_STATE'] && result['android.permission.READ_PHONE_NUMBERS'] === 'granted') {
+            this.setState({ permissionsGranted: true });
+          } 
+          else if (result['android.permission.READ_PHONE_STATE'] || result['android.permission.READ_PHONE_NUMBERS']  === 'never_ask_again') {
+            this.refs.toast.show('Please Go into Settings -> Applications -> APP_NAME -> Permissions and Allow permissions to continue');
+          }
+        });
     } catch (err) {
       console.log(err);
     }
@@ -94,18 +84,25 @@ export default function App() {
   }, [isModalVisible])
 
   const getUniqueIdentifier = async () => {
+
+    const phNumber = await NativeModules.IdentityManager.getDefaultPhoneNumber();
+    console.log("phNumber: ", phNumber);
+
     try {
-      const phNumber = await NativeModules.IdentityManager.getDefaultPhoneNumber();
-      console.log("phNumber: ", phNumber);
-
-      const uniqueIdentifier = await NativeModules.IdentityManager.generateIdentifier(phNumber);
-      console.log("uniqueIdentifier: ", uniqueIdentifier);
-      storeData(phNumber, uniqueIdentifier);
-
-      return retrieveData(phNumber);
+      const retrievedHash = retrieveData(phNumber);
+      console.log("retrievedHash: ", retrievedHash);
+      
+      return retrievedHash;
     } catch (error) {
-      console.log('error', error);
-      return 'Error';
+      try {
+        const uniqueIdentifier = await NativeModules.IdentityManager.generateIdentifier(phNumber);
+        console.log("uniqueIdentifier: ", uniqueIdentifier);
+        storeData(phNumber, uniqueIdentifier);
+
+        return retrieveData(phNumber);
+      } catch (error) {
+        console.log("error: ", error);
+      }
     }
   };
 
