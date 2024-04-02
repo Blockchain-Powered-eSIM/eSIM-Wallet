@@ -43,7 +43,7 @@ public class EuiccManagerModule extends ReactContextBaseJavaModule {
         return "EuiccManager"; // Name exposed to React Native
     }
 
-    // Example: Getting the EID
+    // Getting the EID
     @ReactMethod 
     public void getEID(Promise promise) {
         //Log.d(TAG, "Carrier Privilege State is:" + mTelephonyManager.hasCarrierPrivileges());
