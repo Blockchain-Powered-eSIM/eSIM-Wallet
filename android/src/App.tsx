@@ -88,12 +88,10 @@ export default function App() {
     const phNumber = await NativeModules.IdentityManager.getDefaultPhoneNumber();
     console.log("phNumber: ", phNumber);
 
-    try {
-      const retrievedHash = retrieveData(phNumber);
-      console.log("retrievedHash: ", retrievedHash);
+    const retrievedHash = retrieveData(phNumber);
+    console.log("retrievedHash: ", retrievedHash);
 
-      return retrievedHash;
-    } catch (error) {
+    if(retrievedHash == null) {
       try {
         const uniqueIdentifier = await NativeModules.IdentityManager.generateIdentifier(phNumber);
         console.log("uniqueIdentifier: ", uniqueIdentifier);
@@ -103,6 +101,9 @@ export default function App() {
       } catch (error) {
         console.log("error: ", error);
       }
+    }
+    else {
+      return retrieveData(phNumber);
     }
   };
 
