@@ -36,22 +36,35 @@ npm run start
 
 and then press `a` to run on Android
 
+#### Expected output:
+
+```
+ LOG  UseEffect Asking permission
+ LOG  phNumber:  +15551234567
+ LOG  retrievedHash:  null
+ LOG  uniqueIdentifier:  7a8531a11075593c48b46867280656af40bd44f2d2bc4d6c51c0de91e8c337d5
+```
+
 ## Test Environment
 
-The deployed code is tested on macOS 14.1.1 for Android OS and node version 19.5.0. Refer to [package.json](https://github.com/Blockchain-Powered-eSIM/LPA/blob/main/package.json) for more details on versions of tools used for development and testing.
+The deployed code is tested on macOS 14.1.1 for Android OS,  
+node version 19.5.0, JDK version 17.0.1, openjdk 17.0.10 and
+OpenJDK Runtime Environment Zulu17.48+15-CA (build 17.0.10+7-LTS)
+
+Refer to [package.json](https://github.com/Blockchain-Powered-eSIM/LPA/blob/main/package.json) for more details on versions of tools used for development and testing.
 
 **Minimum API Level required is 29**
 
 ## Permissions required for Android
 
-List of core android services used in the project:
+### List of core android services used in the project:
 
 - https://developer.android.com/reference/android/telephony/euicc/EuiccManager#downloadSubscription
 - https://developer.android.com/reference/android/telephony/TelephonyManager
 - https://developer.android.com/reference/android/telephony/SubscriptionManager
 - https://developer.android.com/reference/android/telephony/SubscriptionInfo
 
-Add these permissions in your Android Manifest if it doesn't exist:
+### Add these permissions in your Android Manifest if it doesn't exist:
 
 ```xml
     <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
@@ -66,3 +79,82 @@ For more details about these permissions reference
 
 - https://developer.android.com/reference/android/Manifest.permission#READ_PRECISE_PHONE_STATE
 - https://source.android.com/docs/core/connect/esim-overview#carrier-privileges
+
+## Fetch Methods
+
+### EID: [getEID()](https://github.com/Blockchain-Powered-eSIM/LPA/blob/main/android/app/src/main/java/com/lpaapp/EuiccBridge/EuiccManagerModule.java)
+
+```
+// Getting the EID
+    @ReactMethod
+    public void getEID(Promise promise) {
+        //Log.d(TAG, "Carrier Privilege State is:" + mTelephonyManager.hasCarrierPrivileges());
+        try {
+            initEuiccManager();
+            if(mTelephonyManager.hasCarrierPrivileges()){
+              if (mEuiccManager.isEnabled()) {
+                  String eid = mEuiccManager.getEid();
+                  promise.resolve(eid);
+              } else {
+                  promise.reject(E_NO_EID, "eUICC Manager is not enabled");
+              }
+            } else {
+                promise.reject(E_NO_CARRIER_PRIVILEGES, "hasCarrierPrivileges check failed");
+            }
+        } catch (Exception e) {
+            promise.reject("Error", e.getMessage());
+        }
+    }
+```
+
+### SIM Info: [subscriptionInfos<>](https://github.com/Blockchain-Powered-eSIM/LPA/blob/main/android/app/src/main/java/com/lpaapp/DeviceInfoBridge/SimDataModule.java)
+
+```
+//via
+TelephonyManager mTelephonyManager = (TelephonyManager) mReactContext.getSystemService(Context.TELEPHONY_SERVICE);
+
+//through
+SubscriptionManager mSubscriptionManager = (SubscriptionManager) mReactContext.getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE);
+
+//Listing SIM Info
+List<SubscriptionInfo> subscriptionInfos = mSubscriptionManager.getActiveSubscriptionInfoList();
+
+            //List
+            CharSequence carrierName = subInfo.getCarrierName();
+            String countryIso = subInfo.getCountryIso();
+            int dataRoaming = subInfo.getDataRoaming(); // 1 is enabled ; 0 is disabled
+            CharSequence displayName = subInfo.getDisplayName();
+            String iccId = subInfo.getIccId();
+            int mcc = subInfo.getMcc();
+            int mnc = subInfo.getMnc();
+            int simSlotIndex = subInfo.getSimSlotIndex();
+            int subscriptionId = subInfo.getSubscriptionId();
+            int networkRoaming = mTelephonyManager.isNetworkRoaming() ? 1 : 0;
+
+```
+
+### Phone Number: [getDefaultPhoneNumber()](https://github.com/Blockchain-Powered-eSIM/LPA/blob/main/android/app/src/main/java/com/lpaapp/IdentityManager/IdentityManagerModule.java)
+
+```
+@ReactMethod
+    public void getDefaultPhoneNumber(Promise promise) {
+      if (ActivityCompat.checkSelfPermission(mReactContext, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
+        initSubscriptionManager();
+        int defaultSubscriptionID = mSubscriptionManager.getDefaultSubscriptionId();
+        SubscriptionInfo defaultSubscription = mSubscriptionManager.getActiveSubscriptionInfo(defaultSubscriptionID);
+        if (defaultSubscription != null) {
+            String phoneNumber;
+            int subscriptionId = defaultSubscription.getSubscriptionId();
+            // getPhoneNumber() method only works for android 13 and above
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+              phoneNumber = mSubscriptionManager.getPhoneNumber(subscriptionId);
+            } else {
+              phoneNumber = mTelephonyManager.getLine1Number();
+            }
+            promise.resolve(phoneNumber);
+        } else {
+            promise.reject(E_NO_DEFAULT_SUBSCRIPTION, "Default Subscription is null"); // Promise reject if no default subscription
+        }
+      }
+    }
+```
