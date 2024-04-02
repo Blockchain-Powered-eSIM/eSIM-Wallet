@@ -91,7 +91,7 @@ export default function App() {
     try {
       const retrievedHash = retrieveData(phNumber);
       console.log("retrievedHash: ", retrievedHash);
-      
+
       return retrievedHash;
     } catch (error) {
       try {
@@ -108,9 +108,9 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Homepage</Text>
+      <Text style={styles.title}>eSIM Wallet app</Text>
       <View style={styles.separator} />
-      <Button title="button" onPress={toggleModalVisibility} />
+      <Button title="Fetch Unique ID" onPress={toggleModalVisibility} />
       <Modal isVisible={isModalVisible}>
         <Modal.Container>
           <Modal.Header title="Device Data" />
