@@ -36,9 +36,22 @@ npm run start
 
 and then press `a` to run on Android
 
+#### Expected output:
+
+```
+ LOG  UseEffect Asking permission
+ LOG  phNumber:  +15551234567
+ LOG  retrievedHash:  null
+ LOG  uniqueIdentifier:  7a8531a11075593c48b46867280656af40bd44f2d2bc4d6c51c0de91e8c337d5
+```
+
 ## Test Environment
 
-The deployed code is tested on macOS 14.1.1 for Android OS and node version 19.5.0. Refer to [package.json](https://github.com/Blockchain-Powered-eSIM/LPA/blob/main/package.json) for more details on versions of tools used for development and testing.
+The deployed code is tested on macOS 14.1.1 for Android OS,  
+node version 19.5.0, JDK version 17.0.1, openjdk 17.0.10 and
+OpenJDK Runtime Environment Zulu17.48+15-CA (build 17.0.10+7-LTS)
+
+Refer to [package.json](https://github.com/Blockchain-Powered-eSIM/LPA/blob/main/package.json) for more details on versions of tools used for development and testing.
 
 **Minimum API Level required is 29**
 
