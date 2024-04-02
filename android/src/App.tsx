@@ -59,7 +59,7 @@ export default function App() {
     try {
       console.log('Asking permission');
       const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.READ_PHONE_NUMBERS,
+        PermissionsAndroid.PERMISSIONS.READ_PHONE_STATE,
         {
           title: 'Read Phone Number Permission',
           message:
@@ -71,7 +71,7 @@ export default function App() {
         },
       );
       if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-        console.log('Phone Number Access Granted');
+        console.log('Phone State Access Granted');
       } else {
         console.log('Permission denied');
       }
