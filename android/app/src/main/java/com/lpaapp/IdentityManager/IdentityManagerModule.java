@@ -26,13 +26,14 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Duration;
+import java.util.List;
 import java.util.UUID;
 
 public class IdentityManagerModule extends ReactContextBaseJavaModule {
 
     private final static String TAG = IdentityManagerModule.class.getCanonicalName();
     private final static String E_NO_DEFAULT_SUBSCRIPTION = "no_defalut_subscription";
-    private final static String E_NO_PHONE_NUMBER_PERMISSION = "no_phoneNumber_permission_available";
+    private final static String E_NO_PHONE_STATE_PERMISSION = "no_phoneState_permission_available";
     private final static String E_FAILED_IDENTITY_GENERATION = "identity_generation_failed";
     private final static String E_UNSUPPORTED_API_LEVEL = "android_version_unsupported";
     private static ReactApplicationContext mReactContext;
@@ -115,7 +116,7 @@ public class IdentityManagerModule extends ReactContextBaseJavaModule {
     // TODO: Add prompt to select the subscription user wants to use 
     @ReactMethod 
     public void getDefaultPhoneNumber(Promise promise) {
-      if (ActivityCompat.checkSelfPermission(mReactContext, Manifest.permission.READ_PHONE_NUMBERS) == PackageManager.PERMISSION_GRANTED) {
+      if (ActivityCompat.checkSelfPermission(mReactContext, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
         initSubscriptionManager();
         int defaultSubscriptionID = mSubscriptionManager.getDefaultSubscriptionId();
         SubscriptionInfo defaultSubscription = mSubscriptionManager.getActiveSubscriptionInfo(defaultSubscriptionID);
@@ -150,7 +151,7 @@ public class IdentityManagerModule extends ReactContextBaseJavaModule {
         //    // Handle case where there are no active subscriptions
         //}
       } else {
-         promise.reject(E_NO_PHONE_NUMBER_PERMISSION, "READ_PHONE_NUMBERS permission not granted");
+         promise.reject(E_NO_PHONE_STATE_PERMISSION, "READ_PHONE_STATE permission not granted");
       }
     }
 
