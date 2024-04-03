@@ -112,7 +112,7 @@ public class IdentityManagerModule extends ReactContextBaseJavaModule {
         }
     }
   
-    // Example: Getting the Phone number for default Subscription
+    //Getting the Phone number for default Subscription
     // TODO: Add prompt to select the subscription user wants to use 
     @ReactMethod 
     public void getDefaultPhoneNumber(Promise promise) {
