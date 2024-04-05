@@ -45,6 +45,10 @@ and then press `a` to run on Android
  LOG  uniqueIdentifier:  7a8531a11075593c48b46867280656af40bd44f2d2bc4d6c51c0de91e8c337d5
 ```
 
+
+https://github.com/ManulParihar/LPA/assets/95626013/2078afce-21bd-4557-810c-a194a5ccfce8
+
+
 ## Test Environment
 
 The deployed code is tested on macOS 14.1.1 for Android OS,  
