@@ -72,7 +72,7 @@ source ~/.zshrc
 
 Verify that `ANDROID_HOME` has been set by running `echo $ANDROID_HOME` and the appropriate directories have been added to your path by running `echo $PATH`.
 
-    > Please make sure you use the correct Android SDK path. You can find the actual location of the SDK in the Android Studio "Settings" dialog, under Languages & Frameworks → Android SDK.
+> Please make sure you use the correct Android SDK path. You can find the actual location of the SDK in the Android Studio "Settings" dialog, under Languages & Frameworks → Android SDK.
 
 ### Clone the project
 
@@ -82,10 +82,10 @@ git clone https://github.com/Blockchain-Powered-eSIM/LPA.git
 
 This project uses React Native's built-in command line interface. Rather than install and manage a specific version of the CLI globally, we recommend you access the current version at runtime using `npx`, which ships with Node.js. With `npx react-native <command>`, the current stable version of the CLI will be downloaded and executed at the time the command is run.
 
-    > If you previously installed a global react-native-cli package, please remove it as it may cause unexpected issues:
-    > ```sh 
-    > npm uninstall -g react-native-cli @react-native-community/cli
-    > ```
+> If you previously installed a global react-native-cli package, please remove it as it may cause unexpected issues:
+> ```sh 
+> npm uninstall -g react-native-cli @react-native-community/cli
+> ```
 
 You will need either an Android device or setup an Android Virtual Device (AVD) to run the app.
 
