@@ -37,5 +37,10 @@
   },
   "engines": {
     "node": ">=18"
+  },
+  "scripts": {
+    "test": "detox test --configuration android.emu.debug",
+    "build": "./mmkv-build-script.sh && detox build --configuration android.emu.debug",
+    "watch": "tsc --watch"
   }
 }
