@@ -7,7 +7,9 @@
     "ios": "react-native run-ios",
     "lint": "eslint .",
     "start": "react-native start",
-    "test": "detox test -c android.emu.debug e2e/jest.config.js"
+    "test": "detox test --configuration android.emu.debug",
+    "build": "./mmkv-build-script.sh && detox build --configuration android.emu.debug",
+    "watch": "tsc --watch"
   },
   "dependencies": {
     "babel-polyfill": "^6.26.0",
@@ -28,19 +30,14 @@
     "@types/react": "^18.2.6",
     "@types/react-test-renderer": "^18.0.0",
     "babel-jest": "^29.6.3",
-    "detox": "^20.20.0",
+    "detox": "^20.20.1",
     "eslint": "^8.19.0",
-    "jest": "^29.6.3",
+    "jest": "^29.7.0",
     "prettier": "2.8.8",
     "react-test-renderer": "18.2.0",
     "typescript": "5.0.4"
   },
   "engines": {
     "node": ">=18"
-  },
-  "scripts": {
-    "test": "detox test --configuration android.emu.debug",
-    "build": "./mmkv-build-script.sh && detox build --configuration android.emu.debug",
-    "watch": "tsc --watch"
   }
 }
