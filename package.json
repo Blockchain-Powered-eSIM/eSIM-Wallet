@@ -39,5 +39,19 @@
   },
   "engines": {
     "node": ">=18"
+  },
+  "detox": {
+    "configurations": {
+      "android.emu.debug": {
+        "type": "android.emulator",
+        "binaryPath": "android/app/build/outputs/apk/debug/app-debug.apk",
+        "build": "cd android && ./gradlew app:assembleDebug app:assembleAndroidTest -DtestBuildType=debug && cd ..",
+        "device": {
+          "avdName": "Pixel_3a_API_30"
+        }
+      }
+    },
+    "test-runner": "jest",
+    "runner-config": "e2e/config.json"
   }
 }
