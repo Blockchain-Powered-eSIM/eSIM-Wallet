@@ -1,8 +1,10 @@
-package com.lpaapp.ECKeyManagement;
+package com.lpaapp.ECKeyManager;
 
 import java.io.File;
 import java.io.PrintStream;
 import java.math.BigInteger;
+import java.security.Security;
+import java.security.Provider;
 import java.nio.charset.StandardCharsets;
 import org.web3j.crypto.Credentials;
 import org.web3j.crypto.ECKeyPair;
@@ -10,11 +12,15 @@ import org.web3j.crypto.Keys;
 import org.web3j.crypto.Sign;
 import org.web3j.crypto.WalletUtils;
 import org.web3j.utils.Numeric;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
+import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.Promise;
+
+import android.util.Log;
 
 public class ECKeyManagementModule extends ReactContextBaseJavaModule {
 
@@ -32,6 +38,15 @@ public class ECKeyManagementModule extends ReactContextBaseJavaModule {
         return "ECKeyManager"; // Name exposed to React Native
     }
 
+    // https://github.com/web3j/web3j/issues/915#issuecomment-483145928
+    private static final void setupBouncyCastle() {
+        final Provider p = Security.getProvider(BouncyCastleProvider.PROVIDER_NAME);
+        if (p == null || p.getClass().equals(BouncyCastleProvider.class)) {
+            return;
+        }
+        Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
+        Security.insertProviderAt(new BouncyCastleProvider(), 1);
+    }
 
     @ReactMethod
     public static String compressPublicKey(BigInteger pubKey) {
@@ -54,15 +69,19 @@ public class ECKeyManagementModule extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public static ECKeyPair generateECKeyPair() throws Exception {
+    public void generateECKeyPair(Promise promise) throws Exception {
         try {
+            // Setup Bouncy Castle.
+            ECKeyManagementModule.setupBouncyCastle();
             // Generate a random private key
             BigInteger privateKey = Keys.createEcKeyPair().getPrivateKey();
             BigInteger publicKey = Sign.publicKeyFromPrivate(privateKey);
 
-            return new ECKeyPair(privateKey, publicKey);
+            ECKeyPair ec = new ECKeyPair(privateKey, publicKey);
+
+            promise.resolve(ec);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            promise.reject(e);
         }
     }
 
@@ -72,13 +91,20 @@ public class ECKeyManagementModule extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public static String generateKeystoreJSON(String walletPassword, String storagePath, ECKeyPair ecKeyPair) throws Exception {
-        return WalletUtils.generateWalletFile(
-                walletPassword,
-                ecKeyPair,
-                new File(storagePath),
-                true
-        );
+    public static void generateKeystoreJSON(String walletPassword, String storagePath, ECKeyPair ecKeyPair, Promise promise) throws Exception {
+
+        try {
+            promise.resolve(
+                    WalletUtils.generateWalletFile(
+                            walletPassword,
+                            ecKeyPair,
+                            new File(storagePath),
+                            true
+                    )
+            );
+        } catch (Exception e) {
+            promise.reject(e);
+        }
     }
 
     @ReactMethod
@@ -86,41 +112,41 @@ public class ECKeyManagementModule extends ReactContextBaseJavaModule {
         return WalletUtils.loadCredentials(walletPassword, keystorePath);
     }
 
-    @ReactMethod
-    public static void test(String[] args) throws Exception {
-        String walletPassword = "Test123";
-        String walletPath = "./target/sampleKeystores";
-
-        // Generate a random EC Key Pair
-        ECKeyPair keyPair = generateECKeyPair();
-
-        // Derive private key from the EC Key Pair
-        BigInteger privateKey = keyPair.getPrivateKey();
-        System.out.println("Private key (256 bits): " + privateKey.toString(16));
-
-        // Derive public key from the EC Key Pair
-        BigInteger publicKey = keyPair.getPublicKey();
-        System.out.println("Public key (512 bits): " + publicKey.toString(16));
-        System.out.println("Public key (compressed): " + compressPublicKey(publicKey));
-
-        // Derive address from the public key
-        String address = deriveAddress(publicKey);
-        System.out.println("Address: " + address);
-
-        // Generate keystore file for the EC Key Pair
-        String walletFileName = generateKeystoreJSON(walletPassword, walletPath, keyPair);
-        System.out.println(walletFileName);
-
-        String keystorePath = walletPath + File.separator + walletFileName;
-
-        // Unlock keystore
-        ECKeyPair derivedKeys = decryptCredentials(keystorePath, walletPassword).getEcKeyPair();
-        System.out.println("Unlocked Private key: " + derivedKeys.getPrivateKey().toString(16));
-        System.out.println("Unlocked Public Key " + derivedKeys.getPublicKey().toString(16));
-
-        // Sign message
-        String msg = "TEST";
-        String signedMessage = signMessage(msg, keyPair);
-        System.out.println("SignedMessage: " + signedMessage);
-    }
+//    @ReactMethod
+//    public static void test(String[] args) throws Exception {
+//        String walletPassword = "Test123";
+//        String walletPath = "./target/sampleKeystores";
+//
+//        // Generate a random EC Key Pair
+//        ECKeyPair keyPair = generateECKeyPair();
+//
+//        // Derive private key from the EC Key Pair
+//        BigInteger privateKey = keyPair.getPrivateKey();
+//        System.out.println("Private key (256 bits): " + privateKey.toString(16));
+//
+//        // Derive public key from the EC Key Pair
+//        BigInteger publicKey = keyPair.getPublicKey();
+//        System.out.println("Public key (512 bits): " + publicKey.toString(16));
+//        System.out.println("Public key (compressed): " + compressPublicKey(publicKey));
+//
+//        // Derive address from the public key
+//        String address = deriveAddress(publicKey);
+//        System.out.println("Address: " + address);
+//
+//        // Generate keystore file for the EC Key Pair
+//        String walletFileName = generateKeystoreJSON(walletPassword, walletPath, keyPair);
+//        System.out.println(walletFileName);
+//
+//        String keystorePath = walletPath + File.separator + walletFileName;
+//
+//        // Unlock keystore
+//        ECKeyPair derivedKeys = decryptCredentials(keystorePath, walletPassword).getEcKeyPair();
+//        System.out.println("Unlocked Private key: " + derivedKeys.getPrivateKey().toString(16));
+//        System.out.println("Unlocked Public Key " + derivedKeys.getPublicKey().toString(16));
+//
+//        // Sign message
+//        String msg = "TEST";
+//        String signedMessage = signMessage(msg, keyPair);
+//        System.out.println("SignedMessage: " + signedMessage);
+//    }
 }
