@@ -1,4 +1,4 @@
-package com.lpaapp.ECKeyManager;
+package com.lpaapp.ECKeyManagement;
 
 import java.io.File;
 import java.io.PrintStream;
@@ -29,7 +29,6 @@ public class ECKeyManagementModule extends ReactContextBaseJavaModule {
 
     public ECKeyManagementModule(ReactApplicationContext reactContext) {
         super(reactContext);
-
         mReactContext = reactContext;
     }
 
