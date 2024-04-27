@@ -5,16 +5,19 @@ import java.io.PrintStream;
 import java.math.BigInteger;
 import java.security.Security;
 import java.security.Provider;
+import java.security.SecureRandom;
 import java.nio.charset.StandardCharsets;
 import org.web3j.crypto.Credentials;
 import org.web3j.crypto.ECKeyPair;
 import org.web3j.crypto.Keys;
 import org.web3j.crypto.Sign;
 import org.web3j.crypto.WalletUtils;
+import org.web3j.crypto.MnemonicUtils;
+import org.web3j.crypto.Hash;
 import org.web3j.utils.Numeric;
+import org.web3j.crypto.Bip39Wallet;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
-import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
@@ -110,6 +113,75 @@ public class ECKeyManagementModule extends ReactContextBaseJavaModule {
     @ReactMethod
     public static Credentials decryptCredentials(String keystorePath, String walletPassword) throws Exception {
         return WalletUtils.loadCredentials(walletPassword, keystorePath);
+    }
+
+    @ReactMethod
+    public static void generateBIP39Mnemonic(Promise promise) throws Exception {
+        try {
+            SecureRandom random = new SecureRandom();
+            byte[] initialEntropy = new byte[16];
+            random.nextBytes(initialEntropy);
+
+            String mnemonic = MnemonicUtils.generateMnemonic(initialEntropy);
+            Log.d("mnemonic: ", mnemonic);
+
+            promise.resolve(mnemonic);
+        } catch (Exception e) {
+            promise.reject(e);
+        }
+    }
+
+    // To be used by other native modules, to generate EC Key Pair and securely store it in the android keystore
+    public static void generateECKeyPairFromMnemonic(String mnemonic, String password, String destinationDirectory, Promise promise) throws Exception {
+        try {
+            byte[] seed = MnemonicUtils.generateSeed(mnemonic, password);
+
+            ECKeyPair keyPair = ECKeyPair.create(Hash.sha256(seed));
+            Log.d("privateKey: ", keyPair.getPrivateKey().toString(16));
+            Log.d("publicKey: ", keyPair.getPublicKey().toString(16));
+
+            promise.resolve(keyPair);
+        } catch (Exception e) {
+            promise.reject(e);
+        }
+    }
+
+    // Generate Wallet from Mnemonic and save into a JSON file
+    @ReactMethod
+    public static void generateAndSaveWallet(String mnemonic, String password, String destinationDirectory, Promise promise) throws Exception {
+        try {
+            byte[] seed = MnemonicUtils.generateSeed(mnemonic, password);
+
+            ECKeyPair keyPair = ECKeyPair.create(Hash.sha256(seed));
+            Log.d("privateKey: ", keyPair.getPrivateKey().toString(16));
+            Log.d("publicKey: ", keyPair.getPublicKey().toString(16));
+
+            String walletFile = WalletUtils.generateWalletFile(password, keyPair, new File(destinationDirectory), false);
+            Log.d("walletFile name: ", walletFile);
+
+            promise.resolve(walletFile);
+        } catch (Exception e) {
+            promise.reject(e);
+        }
+    }
+
+    // TODO: Remove. Only for testing
+    @ReactMethod
+    public static void loadCredentialsFromFile(String password, String filePath, Promise promise) throws Exception {
+        try {
+            Credentials cred = WalletUtils.loadCredentials(password, filePath);
+            ECKeyPair keyPair = cred.getEcKeyPair();
+            String address = cred.getAddress();
+            String privateKey = keyPair.getPrivateKey().toString(16);
+            String publicKey = keyPair.getPublicKey().toString(16);
+            Log.d("getAddress: ", address);
+            Log.d("privateKey: ", privateKey);
+            Log.d("publicKey: ", publicKey);
+
+            promise.resolve(address);
+        } catch (Exception e) {
+            promise.reject(e);
+        }
     }
 
 //    @ReactMethod
