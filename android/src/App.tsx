@@ -5,7 +5,7 @@
  * @format
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   NativeModules,
   SafeAreaView,
@@ -14,12 +14,12 @@ import {
   Text,
   View,
   TouchableOpacity,
-  PermissionsAndroid
+  PermissionsAndroid,
 } from 'react-native';
-import { Button } from './components/Button';
-import { Modal } from './components/Modal';
+import {Button} from './components/Button';
+import {Modal} from './components/Modal';
 
-import { MMKVLoader, useMMKVStorage } from 'react-native-mmkv-storage';
+import {MMKVLoader, useMMKVStorage} from 'react-native-mmkv-storage';
 
 interface ILog {
   command: string;
@@ -34,37 +34,47 @@ export default function App() {
 
   const toggleModalVisibility = () => {
     setIsModalVisible(visible => !visible);
-  }
+  };
 
   // Store and retrieve data
   // TODO: Handle other datatypes
   const storeData = (key, value) => {
-    storageObj.setString(key, value); 
+    storageObj.setString(key, value);
   };
 
-  const retrieveData = (key) => {
+  const retrieveData = key => {
     return storageObj.getString(key);
-  }
-  
+  };
+
   const getEIDs = async () => {
     try {
       const eid = await NativeModules.EuiccManager.getEID();
-      console.log("EID: ", eid);
+      console.log('EID: ', eid);
     } catch (e) {
-      console.log("error occurred: ", e);
+      console.log('error occurred: ', e);
     }
   };
 
   const requestPhoneStatePermission = async () => {
     try {
-      await PermissionsAndroid.requestMultiple([PermissionsAndroid.PERMISSIONS.READ_PHONE_STATE, PermissionsAndroid.PERMISSIONS.READ_PHONE_NUMBERS]).then((result) => {
-          if (result['android.permission.READ_PHONE_STATE'] && result['android.permission.READ_PHONE_NUMBERS'] === 'granted') {
-            this.setState({ permissionsGranted: true });
-          } 
-          else if (result['android.permission.READ_PHONE_STATE'] || result['android.permission.READ_PHONE_NUMBERS']  === 'never_ask_again') {
-            this.refs.toast.show('Please Go into Settings -> Applications -> APP_NAME -> Permissions and Allow permissions to continue');
-          }
-        });
+      await PermissionsAndroid.requestMultiple([
+        PermissionsAndroid.PERMISSIONS.READ_PHONE_STATE,
+        PermissionsAndroid.PERMISSIONS.READ_PHONE_NUMBERS,
+      ]).then(result => {
+        if (
+          result['android.permission.READ_PHONE_STATE'] &&
+          result['android.permission.READ_PHONE_NUMBERS'] === 'granted'
+        ) {
+          this.setState({permissionsGranted: true});
+        } else if (
+          result['android.permission.READ_PHONE_STATE'] ||
+          result['android.permission.READ_PHONE_NUMBERS'] === 'never_ask_again'
+        ) {
+          this.refs.toast.show(
+            'Please Go into Settings -> Applications -> APP_NAME -> Permissions and Allow permissions to continue',
+          );
+        }
+      });
     } catch (err) {
       console.log(err);
     }
@@ -72,7 +82,9 @@ export default function App() {
 
   useEffect(() => {
     console.log('UseEffect Asking permission');
-    (async () => { await requestPhoneStatePermission(); })();
+    (async () => {
+      await requestPhoneStatePermission();
+    })();
   }, []);
 
   useEffect(() => {
@@ -81,28 +93,28 @@ export default function App() {
       const id = await getUniqueIdentifier();
       setIdentifier(id);
     })();
-  }, [isModalVisible])
+  }, [isModalVisible]);
 
   const getUniqueIdentifier = async () => {
-
-    const phNumber = await NativeModules.IdentityManager.getDefaultPhoneNumber();
-    console.log("phNumber: ", phNumber);
+    const phNumber =
+      await NativeModules.IdentityManager.getDefaultPhoneNumber();
+    console.log('phNumber: ', phNumber);
 
     const retrievedHash = retrieveData(phNumber);
-    console.log("retrievedHash: ", retrievedHash);
+    console.log('retrievedHash: ', retrievedHash);
 
-    if(retrievedHash == null) {
+    if (retrievedHash == null) {
       try {
-        const uniqueIdentifier = await NativeModules.IdentityManager.generateIdentifier(phNumber);
-        console.log("uniqueIdentifier: ", uniqueIdentifier);
+        const uniqueIdentifier =
+          await NativeModules.IdentityManager.generateIdentifier(phNumber);
+        console.log('uniqueIdentifier: ', uniqueIdentifier);
         storeData(phNumber, uniqueIdentifier);
 
         return retrieveData(phNumber);
       } catch (error) {
-        console.log("error: ", error);
+        console.log('error: ', error);
       }
-    }
-    else {
+    } else {
       return retrieveData(phNumber);
     }
   };
@@ -130,21 +142,21 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
     fontSize: 20,
-    fontWeight: "bold",
+    fontWeight: 'bold',
   },
   text: {
     fontSize: 16,
-    fontWeight: "400",
-    textAlign: "center",
+    fontWeight: '400',
+    textAlign: 'center',
   },
   separator: {
     marginVertical: 30,
     height: 1,
-    width: "80%",
+    width: '80%',
   },
 });

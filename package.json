@@ -9,7 +9,9 @@
     "start": "react-native start",
     "test": "detox test --configuration android.emu.debug",
     "build": "./mmkv-build-script.sh && detox build --configuration android.emu.debug",
-    "watch": "tsc --watch"
+    "watch": "tsc --watch",
+    "clear-jest-cache": "jest --clearCache",
+    "test:unit": "jest"
   },
   "dependencies": {
     "babel-polyfill": "^6.26.0",
@@ -22,15 +24,15 @@
   "devDependencies": {
     "@babel/core": "^7.24.4",
     "@babel/preset-env": "^7.24.4",
-    "@babel/runtime": "^7.20.0",
+    "@babel/runtime": "^7.24.4",
     "@react-native/babel-preset": "0.73.21",
     "@react-native/eslint-config": "0.73.2",
     "@react-native/metro-config": "0.73.5",
     "@react-native/typescript-config": "0.73.1",
-    "@types/react": "^18.2.6",
-    "@types/react-test-renderer": "^18.0.0",
+    "@types/react": "^18.3.1",
+    "@types/react-test-renderer": "18.3.0",
     "babel-jest": "^29.7.0",
-    "detox": "^20.20.1",
+    "detox": "^20.20.3",
     "eslint": "^8.19.0",
     "jest": "^29.7.0",
     "prettier": "2.8.8",
@@ -47,11 +49,11 @@
         "binaryPath": "android/app/build/outputs/apk/debug/app-debug.apk",
         "build": "cd android && ./gradlew app:assembleDebug app:assembleAndroidTest -DtestBuildType=debug && cd ..",
         "device": {
-          "avdName": "Pixel_3a_API_30"
+          "avdName": "Pixel_3a_API_34_extension_level_7_arm64-v8a"
         }
       }
     },
     "test-runner": "jest",
-    "runner-config": "e2e/config.json"
+    "runner-config": "e2e/jest.config.json"
   }
 }
