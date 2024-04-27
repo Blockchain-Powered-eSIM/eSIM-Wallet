@@ -16,8 +16,10 @@ import {
   TouchableOpacity,
   PermissionsAndroid,
 } from 'react-native';
-import {Button} from './components/Button';
-import {Modal} from './components/Modal';
+
+import { Button } from './components/Button';
+import { Modal } from './components/Modal';
+var RNFS = require('react-native-fs');
 
 import {MMKVLoader, useMMKVStorage} from 'react-native-mmkv-storage';
 
@@ -103,7 +105,9 @@ export default function App() {
     const retrievedHash = retrieveData(phNumber);
     console.log('retrievedHash: ', retrievedHash);
 
-    if (retrievedHash == null) {
+    await handleKMM();
+
+    if(retrievedHash == null) {
       try {
         const uniqueIdentifier =
           await NativeModules.IdentityManager.generateIdentifier(phNumber);
@@ -117,6 +121,20 @@ export default function App() {
     } else {
       return retrieveData(phNumber);
     }
+  };
+
+  const handleKMM = async () => {
+    // Generate mnemonic
+    const mnemonic = await NativeModules.ECKeyManager.generateBIP39Mnemonic();
+    console.log(mnemonic);
+
+    // Create wallet for the mnemonic and save the JSON file in the Downloads folder
+    const fileName = await NativeModules.ECKeyManager.generateAndSaveWallet(mnemonic, "Test123", RNFS.DownloadDirectoryPath);
+    console.log("fileName: ", fileName);
+
+    // Fetch address after unlocking the keystore JSON file
+    const address = await NativeModules.ECKeyManager.loadCredentialsFromFile("Test123", RNFS.DownloadDirectoryPath + "/" + fileName);
+    console.log("address: ", address);
   };
 
   return (
