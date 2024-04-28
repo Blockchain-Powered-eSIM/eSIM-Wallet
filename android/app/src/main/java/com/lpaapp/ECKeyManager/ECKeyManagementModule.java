@@ -1,5 +1,6 @@
 package com.lpaapp.ECKeyManager;
 
+import java.util.*;
 import java.io.File;
 import java.io.PrintStream;
 import java.math.BigInteger;
@@ -135,11 +136,11 @@ public class ECKeyManagementModule extends ReactContextBaseJavaModule {
       random.nextBytes(initialEntropy);
 
       String mnemonic = MnemonicUtils.generateMnemonic(initialEntropy);
-      Log.d("mnemonic: ", mnemonic);
+      Log.d(TAG, "mnemonic: " + mnemonic);
 
       return mnemonic;
     } catch (Exception e) {
-      Log.e("Error: ", e.getMessage());
+      Log.e(TAG, "Error: " + e.getMessage());
       e.printStackTrace();
       return null;
     }
@@ -148,22 +149,48 @@ public class ECKeyManagementModule extends ReactContextBaseJavaModule {
   // To be used by other native modules, to generate EC Key Pair and securely store it in the android keystore
   public static ECKeyPair generateECKeyPairFromMnemonic(String mnemonic, String password) throws Exception {
     try {
+      ECKeyManagementModule.setupBouncyCastle();
       byte[] seed = MnemonicUtils.generateSeed(mnemonic, password);
 
       ECKeyPair keyPair = ECKeyPair.create(Hash.sha256(seed));
-      Log.d("privateKey: ", keyPair.getPrivateKey().toString(16));
-      Log.d("publicKey: ", keyPair.getPublicKey().toString(16));
+      Log.d(TAG, "privateKey: " + keyPair.getPrivateKey().toString(16));
+      Log.d(TAG, "publicKey: " + keyPair.getPublicKey().toString(16));
 
       return keyPair;
     } catch (Exception e) {
-      Log.e("Error: ", e.getMessage());
+      Log.e(TAG, "Error: " + e.getMessage());
       e.printStackTrace();
       return null;
     }
   }
 
   private static java.security.spec.ECPoint getECPoint(BigInteger publicKeyInt, ECNamedCurveParameterSpec ecParams) {
-    return EC5Util.convertPoint(ecParams.getCurve().decodePoint(publicKeyInt.toByteArray()));
+    byte[] publicKeyBytes = publicKeyInt.toByteArray();
+    byte[] correctedBytes;
+
+    if (publicKeyBytes[0] == 0) { // If there's a leading zero byte (sign bit), remove it
+      correctedBytes = new byte[publicKeyBytes.length - 1];
+      System.arraycopy(publicKeyBytes, 1, correctedBytes, 0, correctedBytes.length);
+    } else {
+      correctedBytes = publicKeyBytes;
+    }
+
+    // Check length to decide if it's just X or X and Y
+    ECPoint point;
+    if (correctedBytes.length == 32) { // Only X coordinate
+      // Prefix with 0x02 or 0x03 to indicate compressed encoding (requires knowing if Y is even or odd)
+      byte[] encodedPoint = new byte[33];
+      encodedPoint[0] = 0x02; // Assume Y is even, change to 0x03 if Y is odd
+      System.arraycopy(correctedBytes, 0, encodedPoint, 1, 32);
+      return EC5Util.convertPoint(ecParams.getCurve().decodePoint(encodedPoint));
+    } else if (correctedBytes.length == 64) { // Both X and Y coordinates
+      byte[] encodedPoint = new byte[65];
+      encodedPoint[0] = 0x04; // Uncompressed encoding
+      System.arraycopy(correctedBytes, 0, encodedPoint, 1, 64);
+      return EC5Util.convertPoint(ecParams.getCurve().decodePoint(encodedPoint));
+    } else {
+      throw new IllegalArgumentException("Invalid byte array length: " + correctedBytes.length);
+    }
   }
 
   public static KeyPair convertECKeyPairToKeyPair(ECKeyPair ecKeyPair) throws Exception {
@@ -182,11 +209,13 @@ public class ECKeyManagementModule extends ReactContextBaseJavaModule {
       KeyFactory keyFactory = KeyFactory.getInstance("ECDSA");
       PrivateKey privateKey = keyFactory.generatePrivate(privateKeySpec);
       PublicKey publicKey = keyFactory.generatePublic(publicKeySpec);
+      Log.d(TAG, "Public Key: " + publicKey);
+      Log.d(TAG, "Private Key: " + privateKey);
 
       return new KeyPair(publicKey, privateKey);
 
     } catch (Exception e) {
-      Log.e("Error : ", e.getMessage());
+      Log.e(TAG, "Error in converting ECKeyPair to KeyPair: " + e.getMessage());
       e.printStackTrace();
       return null;
     }
@@ -199,11 +228,11 @@ public class ECKeyManagementModule extends ReactContextBaseJavaModule {
       byte[] seed = MnemonicUtils.generateSeed(mnemonic, password);
 
       ECKeyPair keyPair = ECKeyPair.create(Hash.sha256(seed));
-      Log.d("privateKey: ", keyPair.getPrivateKey().toString(16));
-      Log.d("publicKey: ", keyPair.getPublicKey().toString(16));
+      Log.d(TAG, "privateKey: " + keyPair.getPrivateKey().toString(16));
+      Log.d(TAG, "publicKey: " + keyPair.getPublicKey().toString(16));
 
       String walletFile = WalletUtils.generateWalletFile(password, keyPair, new File(destinationDirectory), false);
-      Log.d("walletFile name: ", walletFile);
+      Log.d(TAG, "walletFile name: " + walletFile);
 
       promise.resolve(walletFile);
     } catch (Exception e) {
@@ -220,9 +249,9 @@ public class ECKeyManagementModule extends ReactContextBaseJavaModule {
       String address = cred.getAddress();
       String privateKey = keyPair.getPrivateKey().toString(16);
       String publicKey = keyPair.getPublicKey().toString(16);
-      Log.d("getAddress: ", address);
-      Log.d("privateKey: ", privateKey);
-      Log.d("publicKey: ", publicKey);
+      Log.d(TAG, "getAddress: " + address);
+      Log.d(TAG, "privateKey: " + privateKey);
+      Log.d(TAG, "publicKey: " + publicKey);
 
       promise.resolve(address);
     } catch (Exception e) {

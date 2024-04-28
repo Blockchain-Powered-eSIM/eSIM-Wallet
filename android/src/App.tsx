@@ -105,7 +105,7 @@ export default function App() {
     const retrievedHash = retrieveData(phNumber);
     console.log('retrievedHash: ', retrievedHash);
 
-    await handleKMM();
+    await checkKeyStore();
 
     if(retrievedHash == null) {
       try {
@@ -120,6 +120,18 @@ export default function App() {
       }
     } else {
       return retrieveData(phNumber);
+    }
+  };
+
+  const checkKeyStore = async () => {
+    try {
+      const msg = await NativeModules.KeyStore.generateAndStoreECKeyPairWithSignature("LPAapp", "Test123");
+      console.log(msg);
+
+      const keys = await NativeModules.KeyStore.retrieveKeyPair("LPAapp");
+      console.log("Keys: ", keys);
+    } catch (error) {
+      console.log("Error: ", error);
     }
   };
 
