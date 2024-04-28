@@ -45,6 +45,8 @@ import java.util.Date;
 import java.util.Calendar;
 import java.util.Locale;
 
+import android.util.Log;
+
 import com.lpaapp.ECKeyManager.ECKeyManagementModule;
 
 public class KeyStoreModule extends ReactContextBaseJavaModule {
@@ -86,9 +88,11 @@ public class KeyStoreModule extends ReactContextBaseJavaModule {
       ECKeyPair ecKey = ECKeyManagementModule.generateECKeyPairFromMnemonic(mnemonic, password);
       // Convert to Java KeyPair object for ease of use with AndroidKeyStore
       KeyPair convertedECKey = ECKeyManagementModule.convertECKeyPairToKeyPair(ecKey);
+      Log.d(TAG, "PublicKey: " + convertedECKey.getPublic() + "Private Key: " + convertedECKey.getPrivate());
 
       // 3. Prepare Certificate (Self-signed)
       Certificate certificate = generateSelfSignedCertificate(alias, convertedECKey); 
+      Log.d(TAG, "Certificate generated");
 
       // 4. Store the key
       KeyStore.PrivateKeyEntry privateKeyEntry = new KeyStore.PrivateKeyEntry(convertedECKey.getPrivate(), new Certificate[] { certificate });
@@ -98,7 +102,7 @@ public class KeyStoreModule extends ReactContextBaseJavaModule {
           .build());
         promise.resolve("Private key securely stored");
       } else {
-        promise.reject(E_MIN_ANDROID_VERSION, "Only Android Marshmellow and above versions are supported");
+        promise.reject(E_MIN_ANDROID_VERSION, "Only Android Marshmallow and above versions are supported");
       }
 
     } catch (Exception e) {
