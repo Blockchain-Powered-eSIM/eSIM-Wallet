@@ -1,4 +1,4 @@
-package com.lpaapp.ECKeyManagement;
+package com.lpaapp.ECKeyManager;
 
 import androidx.annotation.NonNull;
 import com.facebook.react.ReactPackage;

@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
+import android.security.keystore.KeyProtection;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
@@ -44,15 +45,16 @@ import java.util.Date;
 import java.util.Calendar;
 import java.util.Locale;
 
-import com.lpaapp.ECKeyManagement.ECKeyManagementModule;
+import com.lpaapp.ECKeyManager.ECKeyManagementModule;
 
 public class KeyStoreModule extends ReactContextBaseJavaModule {
 
   private final static String TAG = KeyStoreModule.class.getCanonicalName();
   private static final String KEYSTORE_PROVIDER = "AndroidKeyStore";
-  private static final String ALIAS = "myECKey";
-  private static final String EC_CURVE = "secp256r1"; // Example curve
+  private static final String EC_CURVE = "secp256k1";
   private static final String E_KEYSTORE_ALIAS_EXISTS = "keyAlias_already_exists";
+  private static final String E_MIN_ANDROID_VERSION = "incompatible_android_version";
+  private static final String E_ALIAS_PASS_NULL = "alias_or_password_null";
   private static ReactApplicationContext mReactContext;
 
   KeyStoreModule(ReactApplicationContext reactContext) {
@@ -66,8 +68,11 @@ public class KeyStoreModule extends ReactContextBaseJavaModule {
   }
 
   @ReactMethod
-  public void generateAndStoreECKeyPairWithSignature(String alias, Promise promise) {
+  public void generateAndStoreECKeyPairWithSignature(String alias, String password, Promise promise) {
     try {
+      if (alias == null || password == null) { // regex check can also be placed here
+        promise.reject("Alias or password cannot be null!");
+      }
       // 1. Instance Keystore
       KeyStore keyStore = KeyStore.getInstance(KEYSTORE_PROVIDER);
       keyStore.load(null);
@@ -77,28 +82,35 @@ public class KeyStoreModule extends ReactContextBaseJavaModule {
       }
 
       // 2. Generate EC keyPair
-      ECKeyPair ecKey = ECKeyManagementModule.generateECKeyPair();
+      String mnemonic = ECKeyManagementModule.generateBIP39Mnemonic();
+      ECKeyPair ecKey = ECKeyManagementModule.generateECKeyPairFromMnemonic(mnemonic, password);
+      // Convert to Java KeyPair object for ease of use with AndroidKeyStore
+      KeyPair convertedECKey = ECKeyManagementModule.convertECKeyPairToKeyPair(ecKey);
 
       // 3. Prepare Certificate (Self-signed)
-      Certificate certificate = generateSelfSignedCertificate(alias, ecKey); 
+      Certificate certificate = generateSelfSignedCertificate(alias, convertedECKey); 
 
       // 4. Store the key
-      KeyStore.PrivateKeyEntry privateKeyEntry = new KeyStore.PrivateKeyEntry(ecKey.getPrivateKey(), new Certificate[] { certificate });
-      keyStore.setEntry(alias, privateKeyEntry,
-        new KeyProtection.Builder(KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY)
-        .build());
-      promise.resolve("Private key securely stored");
+      KeyStore.PrivateKeyEntry privateKeyEntry = new KeyStore.PrivateKeyEntry(convertedECKey.getPrivate(), new Certificate[] { certificate });
+      if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+        keyStore.setEntry(alias, privateKeyEntry,
+          new KeyProtection.Builder(KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY)
+          .build());
+        promise.resolve("Private key securely stored");
+      } else {
+        promise.reject(E_MIN_ANDROID_VERSION, "Only Android Marshmellow and above versions are supported");
+      }
 
     } catch (Exception e) {
       promise.reject(e);
     }
   }
 
-  private X509Certificate generateSelfSignedCertificate(String alias, ECKeyPair ecKey) throws Exception {
+  private X509Certificate generateSelfSignedCertificate(String alias, KeyPair ecKey) throws Exception {
 
     // Key Pair Generation (assuming EC)
-    PrivateKey privateKey = ecKey.getPrivateKey();
-    PublicKey publicKey = ecKey.getPublicKey();
+    PrivateKey privateKey = ecKey.getPrivate();
+    PublicKey publicKey = ecKey.getPublic();
 
     // Certificate Details
     Calendar startDate = Calendar.getInstance();
@@ -112,7 +124,7 @@ public class KeyStoreModule extends ReactContextBaseJavaModule {
     X509v3CertificateBuilder builder = new JcaX509v3CertificateBuilder(
       issuerName, serialNumber,
       startDate.getTime(), expiryDate.getTime(),
-      Locale.getDefault(), subjectName, 
+      subjectName, 
       publicKey
     );
 
@@ -135,7 +147,7 @@ public class KeyStoreModule extends ReactContextBaseJavaModule {
         Certificate cert = keyStore.getCertificate(alias);
         PublicKey publicKey = cert.getPublicKey();
         PrivateKey privateKey = ((KeyStore.PrivateKeyEntry) keyEntry).getPrivateKey();
-        ECKeyPair ecKey = new ECKeyPair(privateKey, publicKey);
+        KeyPair ecKey = new KeyPair(publicKey, privateKey);
         promise.resolve(ecKey);
       } else {
         promise.reject("KeyStore Entry corresponding to given alias is not a private key"); // or exception
