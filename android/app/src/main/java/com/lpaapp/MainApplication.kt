@@ -17,7 +17,7 @@ import com.facebook.soloader.SoLoader
 import com.lpaapp.EuiccBridge.EuiccManagerPackage
 import com.lpaapp.DeviceInfoBridge.SimDataPackage
 import com.lpaapp.IdentityManager.IdentityManagerPackage
-import com.lpaapp.ECKeyManagement.ECKeyManagementPackage
+import com.lpaapp.ECKeyManager.ECKeyManagementPackage
 import com.lpaapp.KeyStoreBridge.KeyStorePackage
 
 class MainApplication : Application(), ReactApplication {
