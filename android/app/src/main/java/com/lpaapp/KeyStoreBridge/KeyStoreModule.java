@@ -96,17 +96,17 @@ public class KeyStoreModule extends ReactContextBaseJavaModule {
 
       // 4. Store the key
       KeyStore.PrivateKeyEntry privateKeyEntry = new KeyStore.PrivateKeyEntry(convertedECKey.getPrivate(), new Certificate[] { certificate });
+      Log.d(TAG, "PrivateKeyEntry generated");
       if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
         keyStore.setEntry(alias, privateKeyEntry,
-          new KeyProtection.Builder(KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY)
-          .build());
+          new KeyProtection.Builder(KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY | KeyProperties.SECURITY_LEVEL_TRUSTED_ENVIRONMENT).build());
         promise.resolve("Private key securely stored");
       } else {
         promise.reject(E_MIN_ANDROID_VERSION, "Only Android Marshmallow and above versions are supported");
       }
 
     } catch (Exception e) {
-      promise.reject(e);
+      promise.reject("Problem: " + e.getMessage());
     }
   }
 

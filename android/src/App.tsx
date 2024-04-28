@@ -125,10 +125,10 @@ export default function App() {
 
   const checkKeyStore = async () => {
     try {
-      const msg = await NativeModules.KeyStore.generateAndStoreECKeyPairWithSignature("LPAapp", "Test123");
+      const msg = await NativeModules.KeyStore.generateAndStoreECKeyPairWithSignature("TestAPP", "Test123");
       console.log(msg);
 
-      const keys = await NativeModules.KeyStore.retrieveKeyPair("LPAapp");
+      const keys = await NativeModules.KeyStore.retrieveKeyPair("TestAPP");
       console.log("Keys: ", keys);
     } catch (error) {
       console.log("Error: ", error);
