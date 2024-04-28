@@ -131,6 +131,7 @@ public class ECKeyManagementModule extends ReactContextBaseJavaModule {
 
   public static String generateBIP39Mnemonic() throws Exception {
     try {
+      ECKeyManagementModule.setupBouncyCastle();
       SecureRandom random = new SecureRandom();
       byte[] initialEntropy = new byte[16];
       random.nextBytes(initialEntropy);
@@ -149,7 +150,6 @@ public class ECKeyManagementModule extends ReactContextBaseJavaModule {
   // To be used by other native modules, to generate EC Key Pair and securely store it in the android keystore
   public static ECKeyPair generateECKeyPairFromMnemonic(String mnemonic, String password) throws Exception {
     try {
-      ECKeyManagementModule.setupBouncyCastle();
       byte[] seed = MnemonicUtils.generateSeed(mnemonic, password);
 
       ECKeyPair keyPair = ECKeyPair.create(Hash.sha256(seed));
@@ -206,7 +206,7 @@ public class ECKeyManagementModule extends ReactContextBaseJavaModule {
       ECPublicKeySpec publicKeySpec = new ECPublicKeySpec(getECPoint(publicKeyInt, paramSpec), curveSpec);
 
       // Generate PrivateKey and PublicKey objects
-      KeyFactory keyFactory = KeyFactory.getInstance("ECDSA");
+      KeyFactory keyFactory = KeyFactory.getInstance("EC");
       PrivateKey privateKey = keyFactory.generatePrivate(privateKeySpec);
       PublicKey publicKey = keyFactory.generatePublic(publicKeySpec);
       Log.d(TAG, "Public Key: " + publicKey);
