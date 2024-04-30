@@ -44,6 +44,10 @@ import java.math.BigInteger;
 import java.util.Date;
 import java.util.Calendar;
 import java.util.Locale;
+import java.security.Provider;
+import java.util.Enumeration;
+import java.security.Security;
+import java.util.Arrays;
 
 import android.util.Log;
 
@@ -69,6 +73,81 @@ public class KeyStoreModule extends ReactContextBaseJavaModule {
     return "KeyStore"; // Name exposed to React Native
   }
 
+  public KeyPair generateKeyPair(String alias) throws Exception {
+    KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(
+      KeyProperties.KEY_ALGORITHM_RSA, KEYSTORE_PROVIDER);
+
+    keyPairGenerator.initialize(new KeyGenParameterSpec.Builder(
+      alias,
+      KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
+      .setKeySize(2048)
+      .setDigests(KeyProperties.DIGEST_SHA256, KeyProperties.DIGEST_SHA512)
+      .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1)
+      .build());
+
+    return keyPairGenerator.generateKeyPair();
+  }
+
+  public byte[] encryptData(byte[] data, PublicKey publicKey) throws Exception {
+    Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+    cipher.init(Cipher.ENCRYPT_MODE, publicKey);
+    return cipher.doFinal(data);
+  }
+
+  public byte[] decryptData(byte[] encryptedData, PrivateKey privateKey) throws Exception {
+    Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+    cipher.init(Cipher.DECRYPT_MODE, privateKey);
+    return cipher.doFinal(encryptedData);
+  }
+
+  public KeyPair getKeyPair(String alias) throws Exception {
+    KeyStore keyStore = KeyStore.getInstance(KEYSTORE_PROVIDER);
+    keyStore.load(null);
+    KeyStore.PrivateKeyEntry privateKeyEntry = (KeyStore.PrivateKeyEntry) keyStore.getEntry(alias, null);
+    if (privateKeyEntry != null) {
+      PublicKey publicKey = privateKeyEntry.getCertificate().getPublicKey();
+      PrivateKey privateKey = privateKeyEntry.getPrivateKey();
+      return new KeyPair(publicKey, privateKey);
+    }
+    return null;
+  }
+
+  @ReactMethod
+  public void generateAndStoreECKeyPair(String alias, String password, Promise promise) {
+    try {
+      if (alias == null || password == null) { // regex check can also be placed here
+        promise.reject("Alias or password cannot be null!");
+      }
+
+      KeyStore keyStore = KeyStore.getInstance(KEYSTORE_PROVIDER);
+      keyStore.load(null);
+      if(keyStore.containsAlias(alias)){
+        promise.reject(E_KEYSTORE_ALIAS_EXISTS, "There is already an entry in AndroidKeyStore against the given alias");
+      }
+      
+      //Generate EC Key Pair using bouncycastle
+      String mnemonic = ECKeyManagementModule.generateBIP39Mnemonic();
+      ECKeyPair ecKey = ECKeyManagementModule.generateECKeyPairFromMnemonic(mnemonic, password);
+
+      // Generate RSA Keys to encrypt the EC private key
+      KeyPair RSAKey = generateKeyPair(alias);
+
+      //Encrypt the EC private key
+      byte[] ecPrivateKey = ecKey.getPrivateKey().toString(16).getBytes("UTF-8");
+      Log.d(TAG, "EC Private key: " + Arrays.toString(ecPrivateKey));
+
+      byte[] encryptedECKey = encryptData(ecPrivateKey, RSAKey.getPublic());
+      Log.d(TAG, "Encrypted EC Private key: " + Arrays.toString(encryptedECKey));
+
+      byte[] decryptedKey = decryptData(encryptedECKey, RSAKey.getPrivate());
+      Log.d(TAG, "Decrypted EC Private key: " + Arrays.toString(decryptedKey));
+
+      promise.resolve("Master keystore generated");
+    } catch (Exception e) {
+      promise.reject("Problem: " + e.getMessage());
+    }
+  }
+
   @ReactMethod
   public void generateAndStoreECKeyPairWithSignature(String alias, String password, Promise promise) {
     try {
@@ -79,6 +158,21 @@ public class KeyStoreModule extends ReactContextBaseJavaModule {
       KeyStore keyStore = KeyStore.getInstance(KEYSTORE_PROVIDER);
       keyStore.load(null);
 
+      Provider provider = keyStore.getProvider();
+
+      Log.d(TAG, "Android KeyStore Provider: " + provider.getName()); 
+      Log.d(TAG, "Available Algorithms:");
+
+      // Iterate over all registered security providers
+      for (Provider p : Security.getProviders()) {
+        // Print algorithms supported by each provider
+        Log.d(TAG, "Provider: "  + p.getName());
+        for (Provider.Service service : p.getServices()) {
+          String algorithm = service.getAlgorithm();
+          Log.d(TAG, "- " + algorithm);
+        }
+      }
+
       if(keyStore.containsAlias(alias)){
         promise.reject(E_KEYSTORE_ALIAS_EXISTS, "There is already an entry in AndroidKeyStore against the given alias");
       }
@@ -88,11 +182,9 @@ public class KeyStoreModule extends ReactContextBaseJavaModule {
       ECKeyPair ecKey = ECKeyManagementModule.generateECKeyPairFromMnemonic(mnemonic, password);
       // Convert to Java KeyPair object for ease of use with AndroidKeyStore
       KeyPair convertedECKey = ECKeyManagementModule.convertECKeyPairToKeyPair(ecKey);
-      Log.d(TAG, "PublicKey: " + convertedECKey.getPublic() + "Private Key: " + convertedECKey.getPrivate());
 
       // 3. Prepare Certificate (Self-signed)
       Certificate certificate = generateSelfSignedCertificate(alias, convertedECKey); 
-      Log.d(TAG, "Certificate generated");
 
       // 4. Store the key
       KeyStore.PrivateKeyEntry privateKeyEntry = new KeyStore.PrivateKeyEntry(convertedECKey.getPrivate(), new Certificate[] { certificate });
