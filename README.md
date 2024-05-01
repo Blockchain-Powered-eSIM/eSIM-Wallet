@@ -119,11 +119,18 @@ and then press `a` to run on Android
  LOG  phNumber:  +15551234567
  LOG  retrievedHash:  null
  LOG  uniqueIdentifier:  7a8531a11075593c48b46867280656af40bd44f2d2bc4d6c51c0de91e8c337d5
+ LOG  Private Key Encrypted
+ LOG  eSJent1PDOHO36OJk3jyovoyicFW0v/cowrFQ0KJAf3Du1/k1W3ilgZ/SCyV81jP/4OM22CLOPax
+ QqMao22tFm4T/7DY+zdUi6GLNecLhF6t2xhb2+Eerf1SZ2QLAlZ0sQYGB5Tqgi/Le4iwE+JMZ7ky
+ wrkGTM0GUsAitn7jMuGh6T2tKo0j5zeg1BLD4r9jTIMLK3eoKxsydwe6PTHqbZoxx8MBm6d2gdkk
+ k3/hici8YrFm0+dxfzILK9vbYGy86kmIvjosisRzSjnRmsFqUO3F1BeGm+tjfNR34Icz8kvIbz4x
+ ZK+58/aA/9KTPNyrbmIKTeMSlmluJe4qaZUsnw==
+ LOG  Encrypted Key Securely Stored
 ```
 
+https://github.com/ManulParihar/LPA/assets/95626013/22823f13-bf1a-4b2e-91a7-c61307d05eed
 
-https://github.com/ManulParihar/LPA/assets/95626013/2078afce-21bd-4557-810c-a194a5ccfce8
-
+<img width="1470" alt="ADBLogcatOutput" src="https://github.com/ManulParihar/LPA/assets/95626013/e07b40f4-7596-4cef-aa9f-d3fab3c144e2">
 
 ## Test Environment
 
