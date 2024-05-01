@@ -125,11 +125,14 @@ export default function App() {
 
   const checkKeyStore = async () => {
     try {
-      const msg = await NativeModules.KeyStore.generateAndStoreECKeyPairWithSignature("TestAPP", "Test123");
+      //The Alias and Password are inputs
+      const appAlias = "TestAPP";
+      const { encrypted_key, msg } = await NativeModules.KeyStore.generateAndStoreECKeyPair(appAlias, "Test123");
       console.log(msg);
+      console.log(encrypted_key);
 
-      const keys = await NativeModules.KeyStore.retrieveKeyPair("TestAPP");
-      console.log("Keys: ", keys);
+      storeData(appAlias, encrypted_key);
+      console.log("Encrypted Key Securely Stored");
     } catch (error) {
       console.log("Error: ", error);
     }

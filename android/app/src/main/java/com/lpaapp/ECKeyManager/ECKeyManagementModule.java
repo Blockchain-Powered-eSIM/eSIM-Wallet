@@ -131,7 +131,6 @@ public class ECKeyManagementModule extends ReactContextBaseJavaModule {
 
   public static String generateBIP39Mnemonic() throws Exception {
     try {
-      ECKeyManagementModule.setupBouncyCastle();
       SecureRandom random = new SecureRandom();
       byte[] initialEntropy = new byte[16];
       random.nextBytes(initialEntropy);
@@ -152,6 +151,7 @@ public class ECKeyManagementModule extends ReactContextBaseJavaModule {
     try {
       byte[] seed = MnemonicUtils.generateSeed(mnemonic, password);
 
+      ECKeyManagementModule.setupBouncyCastle();
       ECKeyPair keyPair = ECKeyPair.create(Hash.sha256(seed));
       Log.d(TAG, "privateKey: " + keyPair.getPrivateKey().toString(16));
       Log.d(TAG, "publicKey: " + keyPair.getPublicKey().toString(16));
@@ -209,8 +209,6 @@ public class ECKeyManagementModule extends ReactContextBaseJavaModule {
       KeyFactory keyFactory = KeyFactory.getInstance("EC");
       PrivateKey privateKey = keyFactory.generatePrivate(privateKeySpec);
       PublicKey publicKey = keyFactory.generatePublic(publicKeySpec);
-      Log.d(TAG, "Public Key: " + publicKey);
-      Log.d(TAG, "Private Key: " + privateKey);
 
       return new KeyPair(publicKey, privateKey);
 
