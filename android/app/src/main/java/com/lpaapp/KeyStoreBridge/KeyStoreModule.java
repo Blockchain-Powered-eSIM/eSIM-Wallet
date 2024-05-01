@@ -5,28 +5,29 @@ import android.content.SharedPreferences;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 import android.security.keystore.KeyProtection;
+import android.util.Base64;
+import android.util.Log;
+
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
-import java.security.KeyStore;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.KeyStore;
+import java.security.PrivateKey;
+import java.security.Provider;
+import java.security.PublicKey;
+import java.security.Security;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
 import java.security.spec.ECGenParameterSpec;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
-import org.web3j.crypto.ECKeyPair;
-import org.web3j.crypto.Keys;
-import org.web3j.crypto.Credentials;
-import org.web3j.crypto.Sign;
-import org.web3j.crypto.WalletUtils;
-import org.web3j.utils.Numeric;
-import android.util.Base64;
-import com.facebook.react.bridge.Promise;
-import com.facebook.react.bridge.ReactApplicationContext;
-import com.facebook.react.bridge.ReactContextBaseJavaModule;
-import com.facebook.react.bridge.ReactMethod;
 
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
@@ -34,22 +35,20 @@ import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.cert.X509Certificate;
-import java.security.cert.Certificate;
-import java.math.BigInteger;
-import java.util.Date;
-import java.util.Calendar;
-import java.util.Locale;
-import java.security.Provider;
-import java.util.Enumeration;
-import java.security.Security;
-import java.util.Arrays;
+import org.web3j.crypto.Credentials;
+import org.web3j.crypto.ECKeyPair;
+import org.web3j.crypto.Keys;
+import org.web3j.crypto.Sign;
+import org.web3j.crypto.WalletUtils;
+import org.web3j.utils.Numeric;
 
-import android.util.Log;
+import com.facebook.react.bridge.Arguments;
+import com.facebook.react.bridge.Promise;
+import com.facebook.react.bridge.ReactApplicationContext;
+import com.facebook.react.bridge.ReactContextBaseJavaModule;
+import com.facebook.react.bridge.ReactMethod;
+import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.bridge.WritableNativeMap;
 
 import com.lpaapp.ECKeyManager.ECKeyManagementModule;
 
@@ -73,10 +72,12 @@ public class KeyStoreModule extends ReactContextBaseJavaModule {
     return "KeyStore"; // Name exposed to React Native
   }
 
-  public KeyPair generateKeyPair(String alias) throws Exception {
+  // Generate RSA KeyPair which is by default stored in Android Key Store
+  private KeyPair generateRSAKeyPair(String alias) throws Exception {
     KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(
       KeyProperties.KEY_ALGORITHM_RSA, KEYSTORE_PROVIDER);
 
+    // .setUserAuthenticationRequired(true) for enabling user authentication for decryption
     keyPairGenerator.initialize(new KeyGenParameterSpec.Builder(
       alias,
       KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
@@ -100,18 +101,74 @@ public class KeyStoreModule extends ReactContextBaseJavaModule {
     return cipher.doFinal(encryptedData);
   }
 
-  public KeyPair getKeyPair(String alias) throws Exception {
-    KeyStore keyStore = KeyStore.getInstance(KEYSTORE_PROVIDER);
-    keyStore.load(null);
-    KeyStore.PrivateKeyEntry privateKeyEntry = (KeyStore.PrivateKeyEntry) keyStore.getEntry(alias, null);
-    if (privateKeyEntry != null) {
-      PublicKey publicKey = privateKeyEntry.getCertificate().getPublicKey();
-      PrivateKey privateKey = privateKeyEntry.getPrivateKey();
-      return new KeyPair(publicKey, privateKey);
+  @ReactMethod
+  public void retrieveKeyPair(String alias, Promise promise) {
+    try {
+      KeyStore keyStore = KeyStore.getInstance(KEYSTORE_PROVIDER);
+      keyStore.load(null); 
+
+      KeyStore.Entry keyEntry = keyStore.getEntry(alias, null);
+      if (keyEntry instanceof KeyStore.PrivateKeyEntry) {
+        Certificate cert = keyStore.getCertificate(alias);
+        PublicKey publicKey = cert.getPublicKey();
+        PrivateKey privateKey = ((KeyStore.PrivateKeyEntry) keyEntry).getPrivateKey();
+        KeyPair retrievedKeyPair = new KeyPair(publicKey, privateKey);
+        promise.resolve(retrievedKeyPair);
+      } else {
+        promise.reject("KeyStore Entry corresponding to given alias is not a private key"); // or exception
+      } 
+    } catch (Exception e) {
+      promise.reject(TAG, "Exception encountered: " + e.getMessage());
     }
-    return null;
   }
 
+  private X509Certificate generateSelfSignedCertificate(String alias, KeyPair ecKey) throws Exception {
+
+    // Key Pair Generation (assuming EC)
+    PrivateKey privateKey = ecKey.getPrivate();
+    PublicKey publicKey = ecKey.getPublic();
+
+    // Certificate Details
+    Calendar startDate = Calendar.getInstance();
+    Calendar expiryDate = Calendar.getInstance();
+    expiryDate.add(Calendar.YEAR, 1); // 1-year validity
+    BigInteger serialNumber = BigInteger.valueOf(System.currentTimeMillis()); 
+    X500Name issuerName = new X500Name("CN=LPA, O=GMMS, L=BAN, ST=KN, C=IN"); 
+    X500Name subjectName = issuerName; // Self-signed
+
+    // Build Certificate
+    X509v3CertificateBuilder builder = new JcaX509v3CertificateBuilder(
+      issuerName, serialNumber,
+      startDate.getTime(), expiryDate.getTime(),
+      subjectName, 
+      publicKey
+    );
+
+    // Sign using Private Key
+    JcaContentSignerBuilder signerBuilder = new JcaContentSignerBuilder("SHA256WithECDSA");
+    X509Certificate certificate = new JcaX509CertificateConverter()
+    .getCertificate(builder.build(signerBuilder.build(privateKey)));
+
+    return certificate;
+  }
+
+  @ReactMethod
+  public void checkCertificateValidity(String alias, Promise promise) {
+    try {
+      KeyStore keyStore = KeyStore.getInstance(KEYSTORE_PROVIDER);
+      keyStore.load(null); 
+
+      Certificate certificate = keyStore.getCertificate(alias);
+      certificate.verify(certificate.getPublicKey()); // Basic validity check
+
+      // ... Additional validation logic as needed
+    } catch (Exception e) {
+      // Handle exceptions
+      promise.reject(TAG, "Exception encountered: " + e.getMessage());
+    }
+  }
+
+  // Encrypting generated secp256k1 keys by RSA
   @ReactMethod
   public void generateAndStoreECKeyPair(String alias, String password, Promise promise) {
     try {
@@ -130,7 +187,7 @@ public class KeyStoreModule extends ReactContextBaseJavaModule {
       ECKeyPair ecKey = ECKeyManagementModule.generateECKeyPairFromMnemonic(mnemonic, password);
 
       // Generate RSA Keys to encrypt the EC private key
-      KeyPair RSAKey = generateKeyPair(alias);
+      KeyPair RSAKey = generateRSAKeyPair(alias);
 
       //Encrypt the EC private key
       byte[] ecPrivateKey = ecKey.getPrivateKey().toString(16).getBytes("UTF-8");
@@ -142,9 +199,14 @@ public class KeyStoreModule extends ReactContextBaseJavaModule {
       byte[] decryptedKey = decryptData(encryptedECKey, RSAKey.getPrivate());
       Log.d(TAG, "Decrypted EC Private key: " + Arrays.toString(decryptedKey));
 
-      promise.resolve("Master keystore generated");
+      WritableMap result = new WritableNativeMap();
+      String base64EncryptedKey = Base64.encodeToString(encryptedECKey, Base64.DEFAULT);
+      result.putString("encrypted_key", base64EncryptedKey);
+      result.putString("msg", "Private Key Encrypted");
+
+      promise.resolve(result);
     } catch (Exception e) {
-      promise.reject("Problem: " + e.getMessage());
+      promise.reject(TAG, "Exception encountered: " + e.getMessage());
     }
   }
 
@@ -198,73 +260,7 @@ public class KeyStoreModule extends ReactContextBaseJavaModule {
       }
 
     } catch (Exception e) {
-      promise.reject("Problem: " + e.getMessage());
-    }
-  }
-
-  private X509Certificate generateSelfSignedCertificate(String alias, KeyPair ecKey) throws Exception {
-
-    // Key Pair Generation (assuming EC)
-    PrivateKey privateKey = ecKey.getPrivate();
-    PublicKey publicKey = ecKey.getPublic();
-
-    // Certificate Details
-    Calendar startDate = Calendar.getInstance();
-    Calendar expiryDate = Calendar.getInstance();
-    expiryDate.add(Calendar.YEAR, 1); // 1-year validity
-    BigInteger serialNumber = BigInteger.valueOf(System.currentTimeMillis()); 
-    X500Name issuerName = new X500Name("CN=LPA, O=GMMS, L=BAN, ST=KN, C=IN"); 
-    X500Name subjectName = issuerName; // Self-signed
-
-    // Build Certificate
-    X509v3CertificateBuilder builder = new JcaX509v3CertificateBuilder(
-      issuerName, serialNumber,
-      startDate.getTime(), expiryDate.getTime(),
-      subjectName, 
-      publicKey
-    );
-
-    // Sign using Private Key
-    JcaContentSignerBuilder signerBuilder = new JcaContentSignerBuilder("SHA256WithECDSA");
-    X509Certificate certificate = new JcaX509CertificateConverter()
-    .getCertificate(builder.build(signerBuilder.build(privateKey)));
-
-    return certificate;
-  }
-
-  @ReactMethod
-  public void retrieveKeyPair(String alias, Promise promise) {
-    try {
-      KeyStore keyStore = KeyStore.getInstance(KEYSTORE_PROVIDER);
-      keyStore.load(null); 
-
-      KeyStore.Entry keyEntry = keyStore.getEntry(alias, null);
-      if (keyEntry instanceof KeyStore.PrivateKeyEntry) {
-        Certificate cert = keyStore.getCertificate(alias);
-        PublicKey publicKey = cert.getPublicKey();
-        PrivateKey privateKey = ((KeyStore.PrivateKeyEntry) keyEntry).getPrivateKey();
-        KeyPair ecKey = new KeyPair(publicKey, privateKey);
-        promise.resolve(ecKey);
-      } else {
-        promise.reject("KeyStore Entry corresponding to given alias is not a private key"); // or exception
-      } 
-    } catch (Exception e) {
-      promise.reject(e);
-    }
-  }
-
-  @ReactMethod
-  public void checkCertificateValidity(String alias) {
-    try {
-      KeyStore keyStore = KeyStore.getInstance(KEYSTORE_PROVIDER);
-      keyStore.load(null); 
-
-      Certificate certificate = keyStore.getCertificate(alias);
-      certificate.verify(certificate.getPublicKey()); // Basic validity check
-
-      // ... Additional validation logic as needed
-    } catch (Exception e) {
-      // Handle exceptions
+      promise.reject(TAG, "Exception encountered: " + e.getMessage());
     }
   }
 
