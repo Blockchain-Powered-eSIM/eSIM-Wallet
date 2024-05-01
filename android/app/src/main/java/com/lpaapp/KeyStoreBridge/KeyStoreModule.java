@@ -5,28 +5,29 @@ import android.content.SharedPreferences;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 import android.security.keystore.KeyProtection;
+import android.util.Base64;
+import android.util.Log;
+
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
-import java.security.KeyStore;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.KeyStore;
+import java.security.PrivateKey;
+import java.security.Provider;
+import java.security.PublicKey;
+import java.security.Security;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
 import java.security.spec.ECGenParameterSpec;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
-import org.web3j.crypto.ECKeyPair;
-import org.web3j.crypto.Keys;
-import org.web3j.crypto.Credentials;
-import org.web3j.crypto.Sign;
-import org.web3j.crypto.WalletUtils;
-import org.web3j.utils.Numeric;
-import android.util.Base64;
-import com.facebook.react.bridge.Promise;
-import com.facebook.react.bridge.ReactApplicationContext;
-import com.facebook.react.bridge.ReactContextBaseJavaModule;
-import com.facebook.react.bridge.ReactMethod;
 
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
@@ -34,18 +35,20 @@ import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.cert.X509Certificate;
-import java.security.cert.Certificate;
-import java.math.BigInteger;
-import java.util.Date;
-import java.util.Calendar;
-import java.util.Locale;
+import org.web3j.crypto.Credentials;
+import org.web3j.crypto.ECKeyPair;
+import org.web3j.crypto.Keys;
+import org.web3j.crypto.Sign;
+import org.web3j.crypto.WalletUtils;
+import org.web3j.utils.Numeric;
 
-import android.util.Log;
+import com.facebook.react.bridge.Arguments;
+import com.facebook.react.bridge.Promise;
+import com.facebook.react.bridge.ReactApplicationContext;
+import com.facebook.react.bridge.ReactContextBaseJavaModule;
+import com.facebook.react.bridge.ReactMethod;
+import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.bridge.WritableNativeMap;
 
 import com.lpaapp.ECKeyManager.ECKeyManagementModule;
 
@@ -69,44 +72,53 @@ public class KeyStoreModule extends ReactContextBaseJavaModule {
     return "KeyStore"; // Name exposed to React Native
   }
 
+  // Generate RSA KeyPair which is by default stored in Android Key Store
+  private KeyPair generateRSAKeyPair(String alias) throws Exception {
+    KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(
+      KeyProperties.KEY_ALGORITHM_RSA, KEYSTORE_PROVIDER);
+
+    // .setUserAuthenticationRequired(true) for enabling user authentication for decryption
+    keyPairGenerator.initialize(new KeyGenParameterSpec.Builder(
+      alias,
+      KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
+      .setKeySize(2048)
+      .setDigests(KeyProperties.DIGEST_SHA256, KeyProperties.DIGEST_SHA512)
+      .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1)
+      .build());
+
+    return keyPairGenerator.generateKeyPair();
+  }
+
+  public byte[] encryptData(byte[] data, PublicKey publicKey) throws Exception {
+    Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+    cipher.init(Cipher.ENCRYPT_MODE, publicKey);
+    return cipher.doFinal(data);
+  }
+
+  public byte[] decryptData(byte[] encryptedData, PrivateKey privateKey) throws Exception {
+    Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+    cipher.init(Cipher.DECRYPT_MODE, privateKey);
+    return cipher.doFinal(encryptedData);
+  }
+
   @ReactMethod
-  public void generateAndStoreECKeyPairWithSignature(String alias, String password, Promise promise) {
+  public void retrieveKeyPair(String alias, Promise promise) {
     try {
-      if (alias == null || password == null) { // regex check can also be placed here
-        promise.reject("Alias or password cannot be null!");
-      }
-      // 1. Instance Keystore
       KeyStore keyStore = KeyStore.getInstance(KEYSTORE_PROVIDER);
-      keyStore.load(null);
+      keyStore.load(null); 
 
-      if(keyStore.containsAlias(alias)){
-        promise.reject(E_KEYSTORE_ALIAS_EXISTS, "There is already an entry in AndroidKeyStore against the given alias");
-      }
-
-      // 2. Generate EC keyPair
-      String mnemonic = ECKeyManagementModule.generateBIP39Mnemonic();
-      ECKeyPair ecKey = ECKeyManagementModule.generateECKeyPairFromMnemonic(mnemonic, password);
-      // Convert to Java KeyPair object for ease of use with AndroidKeyStore
-      KeyPair convertedECKey = ECKeyManagementModule.convertECKeyPairToKeyPair(ecKey);
-      Log.d(TAG, "PublicKey: " + convertedECKey.getPublic() + "Private Key: " + convertedECKey.getPrivate());
-
-      // 3. Prepare Certificate (Self-signed)
-      Certificate certificate = generateSelfSignedCertificate(alias, convertedECKey); 
-      Log.d(TAG, "Certificate generated");
-
-      // 4. Store the key
-      KeyStore.PrivateKeyEntry privateKeyEntry = new KeyStore.PrivateKeyEntry(convertedECKey.getPrivate(), new Certificate[] { certificate });
-      Log.d(TAG, "PrivateKeyEntry generated");
-      if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-        keyStore.setEntry(alias, privateKeyEntry,
-          new KeyProtection.Builder(KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY | KeyProperties.SECURITY_LEVEL_TRUSTED_ENVIRONMENT).build());
-        promise.resolve("Private key securely stored");
+      KeyStore.Entry keyEntry = keyStore.getEntry(alias, null);
+      if (keyEntry instanceof KeyStore.PrivateKeyEntry) {
+        Certificate cert = keyStore.getCertificate(alias);
+        PublicKey publicKey = cert.getPublicKey();
+        PrivateKey privateKey = ((KeyStore.PrivateKeyEntry) keyEntry).getPrivateKey();
+        KeyPair retrievedKeyPair = new KeyPair(publicKey, privateKey);
+        promise.resolve(retrievedKeyPair);
       } else {
-        promise.reject(E_MIN_ANDROID_VERSION, "Only Android Marshmallow and above versions are supported");
-      }
-
+        promise.reject("KeyStore Entry corresponding to given alias is not a private key"); // or exception
+      } 
     } catch (Exception e) {
-      promise.reject("Problem: " + e.getMessage());
+      promise.reject(TAG, "Exception encountered: " + e.getMessage());
     }
   }
 
@@ -141,28 +153,7 @@ public class KeyStoreModule extends ReactContextBaseJavaModule {
   }
 
   @ReactMethod
-  public void retrieveKeyPair(String alias, Promise promise) {
-    try {
-      KeyStore keyStore = KeyStore.getInstance(KEYSTORE_PROVIDER);
-      keyStore.load(null); 
-
-      KeyStore.Entry keyEntry = keyStore.getEntry(alias, null);
-      if (keyEntry instanceof KeyStore.PrivateKeyEntry) {
-        Certificate cert = keyStore.getCertificate(alias);
-        PublicKey publicKey = cert.getPublicKey();
-        PrivateKey privateKey = ((KeyStore.PrivateKeyEntry) keyEntry).getPrivateKey();
-        KeyPair ecKey = new KeyPair(publicKey, privateKey);
-        promise.resolve(ecKey);
-      } else {
-        promise.reject("KeyStore Entry corresponding to given alias is not a private key"); // or exception
-      } 
-    } catch (Exception e) {
-      promise.reject(e);
-    }
-  }
-
-  @ReactMethod
-  public void checkCertificateValidity(String alias) {
+  public void checkCertificateValidity(String alias, Promise promise) {
     try {
       KeyStore keyStore = KeyStore.getInstance(KEYSTORE_PROVIDER);
       keyStore.load(null); 
@@ -173,6 +164,103 @@ public class KeyStoreModule extends ReactContextBaseJavaModule {
       // ... Additional validation logic as needed
     } catch (Exception e) {
       // Handle exceptions
+      promise.reject(TAG, "Exception encountered: " + e.getMessage());
+    }
+  }
+
+  // Encrypting generated secp256k1 keys by RSA
+  @ReactMethod
+  public void generateAndStoreECKeyPair(String alias, String password, Promise promise) {
+    try {
+      if (alias == null || password == null) { // regex check can also be placed here
+        promise.reject("Alias or password cannot be null!");
+      }
+
+      KeyStore keyStore = KeyStore.getInstance(KEYSTORE_PROVIDER);
+      keyStore.load(null);
+      if(keyStore.containsAlias(alias)){
+        promise.reject(E_KEYSTORE_ALIAS_EXISTS, "There is already an entry in AndroidKeyStore against the given alias");
+      }
+      
+      //Generate EC Key Pair using bouncycastle
+      String mnemonic = ECKeyManagementModule.generateBIP39Mnemonic();
+      ECKeyPair ecKey = ECKeyManagementModule.generateECKeyPairFromMnemonic(mnemonic, password);
+
+      // Generate RSA Keys to encrypt the EC private key
+      KeyPair RSAKey = generateRSAKeyPair(alias);
+
+      //Encrypt the EC private key
+      byte[] ecPrivateKey = ecKey.getPrivateKey().toString(16).getBytes("UTF-8");
+      Log.d(TAG, "EC Private key: " + Arrays.toString(ecPrivateKey));
+
+      byte[] encryptedECKey = encryptData(ecPrivateKey, RSAKey.getPublic());
+      Log.d(TAG, "Encrypted EC Private key: " + Arrays.toString(encryptedECKey));
+
+      byte[] decryptedKey = decryptData(encryptedECKey, RSAKey.getPrivate());
+      Log.d(TAG, "Decrypted EC Private key: " + Arrays.toString(decryptedKey));
+
+      WritableMap result = new WritableNativeMap();
+      String base64EncryptedKey = Base64.encodeToString(encryptedECKey, Base64.DEFAULT);
+      result.putString("encrypted_key", base64EncryptedKey);
+      result.putString("msg", "Private Key Encrypted");
+
+      promise.resolve(result);
+    } catch (Exception e) {
+      promise.reject(TAG, "Exception encountered: " + e.getMessage());
+    }
+  }
+
+  @ReactMethod
+  public void generateAndStoreECKeyPairWithSignature(String alias, String password, Promise promise) {
+    try {
+      if (alias == null || password == null) { // regex check can also be placed here
+        promise.reject("Alias or password cannot be null!");
+      }
+      // 1. Instance Keystore
+      KeyStore keyStore = KeyStore.getInstance(KEYSTORE_PROVIDER);
+      keyStore.load(null);
+
+      Provider provider = keyStore.getProvider();
+
+      Log.d(TAG, "Android KeyStore Provider: " + provider.getName()); 
+      Log.d(TAG, "Available Algorithms:");
+
+      // Iterate over all registered security providers
+      for (Provider p : Security.getProviders()) {
+        // Print algorithms supported by each provider
+        Log.d(TAG, "Provider: "  + p.getName());
+        for (Provider.Service service : p.getServices()) {
+          String algorithm = service.getAlgorithm();
+          Log.d(TAG, "- " + algorithm);
+        }
+      }
+
+      if(keyStore.containsAlias(alias)){
+        promise.reject(E_KEYSTORE_ALIAS_EXISTS, "There is already an entry in AndroidKeyStore against the given alias");
+      }
+
+      // 2. Generate EC keyPair
+      String mnemonic = ECKeyManagementModule.generateBIP39Mnemonic();
+      ECKeyPair ecKey = ECKeyManagementModule.generateECKeyPairFromMnemonic(mnemonic, password);
+      // Convert to Java KeyPair object for ease of use with AndroidKeyStore
+      KeyPair convertedECKey = ECKeyManagementModule.convertECKeyPairToKeyPair(ecKey);
+
+      // 3. Prepare Certificate (Self-signed)
+      Certificate certificate = generateSelfSignedCertificate(alias, convertedECKey); 
+
+      // 4. Store the key
+      KeyStore.PrivateKeyEntry privateKeyEntry = new KeyStore.PrivateKeyEntry(convertedECKey.getPrivate(), new Certificate[] { certificate });
+      Log.d(TAG, "PrivateKeyEntry generated");
+      if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+        keyStore.setEntry(alias, privateKeyEntry,
+          new KeyProtection.Builder(KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY | KeyProperties.SECURITY_LEVEL_TRUSTED_ENVIRONMENT).build());
+        promise.resolve("Private key securely stored");
+      } else {
+        promise.reject(E_MIN_ANDROID_VERSION, "Only Android Marshmallow and above versions are supported");
+      }
+
+    } catch (Exception e) {
+      promise.reject(TAG, "Exception encountered: " + e.getMessage());
     }
   }
 
