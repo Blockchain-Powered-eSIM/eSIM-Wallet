@@ -170,7 +170,7 @@ public class KeyStoreModule extends ReactContextBaseJavaModule {
 
   // Encrypting generated secp256k1 keys by RSA
   @ReactMethod
-  public void generateAndStoreECKeyPair(String alias, String password, Promise promise) {
+  public void generateAndStoreECKeyPair(String alias, String password, String directoryPath, Promise promise) {
     try {
       if (alias == null || password == null) { // regex check can also be placed here
         promise.reject("Alias or password cannot be null!");
@@ -184,7 +184,7 @@ public class KeyStoreModule extends ReactContextBaseJavaModule {
       
       //Generate EC Key Pair using bouncycastle
       String mnemonic = ECKeyManagementModule.generateBIP39Mnemonic();
-      ECKeyPair ecKey = ECKeyManagementModule.generateECKeyPairFromMnemonic(mnemonic, password);
+      ECKeyPair ecKey = ECKeyManagementModule.generateECKeyPairFromMnemonic(mnemonic, password, directoryPath);
 
       // Generate RSA Keys to encrypt the EC private key
       KeyPair RSAKey = generateRSAKeyPair(alias);
@@ -211,7 +211,7 @@ public class KeyStoreModule extends ReactContextBaseJavaModule {
   }
 
   @ReactMethod
-  public void generateAndStoreECKeyPairWithSignature(String alias, String password, Promise promise) {
+  public void generateAndStoreECKeyPairWithSignature(String alias, String password, String directoryPath, Promise promise) {
     try {
       if (alias == null || password == null) { // regex check can also be placed here
         promise.reject("Alias or password cannot be null!");
@@ -241,7 +241,7 @@ public class KeyStoreModule extends ReactContextBaseJavaModule {
 
       // 2. Generate EC keyPair
       String mnemonic = ECKeyManagementModule.generateBIP39Mnemonic();
-      ECKeyPair ecKey = ECKeyManagementModule.generateECKeyPairFromMnemonic(mnemonic, password);
+      ECKeyPair ecKey = ECKeyManagementModule.generateECKeyPairFromMnemonic(mnemonic, password, directoryPath);
       // Convert to Java KeyPair object for ease of use with AndroidKeyStore
       KeyPair convertedECKey = ECKeyManagementModule.convertECKeyPairToKeyPair(ecKey);
 
