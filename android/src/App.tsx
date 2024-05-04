@@ -127,7 +127,7 @@ export default function App() {
     try {
       //The Alias and Password are inputs
       const appAlias = "TestAPP";
-      const { encrypted_key, msg } = await NativeModules.KeyStore.generateAndStoreECKeyPair(appAlias, "Test123");
+      const { encrypted_key, msg } = await NativeModules.KeyStore.generateAndStoreECKeyPair(appAlias, "Test123", RNFS.DownloadDirectoryPath);
       console.log(msg);
       console.log(encrypted_key);
 

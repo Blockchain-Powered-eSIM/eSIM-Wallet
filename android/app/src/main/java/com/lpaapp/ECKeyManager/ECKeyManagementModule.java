@@ -147,7 +147,8 @@ public class ECKeyManagementModule extends ReactContextBaseJavaModule {
   }
 
   // To be used by other native modules, to generate EC Key Pair and securely store it in the android keystore
-  public static ECKeyPair generateECKeyPairFromMnemonic(String mnemonic, String password) throws Exception {
+  // Also creates a password protected Kyestore JSON file in user's mobile device
+  public static ECKeyPair generateECKeyPairFromMnemonic(String mnemonic, String password, String destinationDirectory) throws Exception {
     try {
       byte[] seed = MnemonicUtils.generateSeed(mnemonic, password);
 
@@ -155,6 +156,9 @@ public class ECKeyManagementModule extends ReactContextBaseJavaModule {
       ECKeyPair keyPair = ECKeyPair.create(Hash.sha256(seed));
       Log.d(TAG, "privateKey: " + keyPair.getPrivateKey().toString(16));
       Log.d(TAG, "publicKey: " + keyPair.getPublicKey().toString(16));
+
+      String walletFile = WalletUtils.generateWalletFile(password, keyPair, new File(destinationDirectory), false);
+      Log.d(TAG, "walletFile name: " + walletFile);
 
       return keyPair;
     } catch (Exception e) {
