@@ -155,30 +155,6 @@ public class IdentityManagerModule extends ReactContextBaseJavaModule {
       }
     }
 
-    // TODO : pass phone number to identitiy genetion method internally in the class
-    //private String fetchPhoneNumber() {
-    //  final String[] phoneNumber = new String[1];
-  
-    //  Thread thread = new Thread(() -> {
-    //    try {
-    //      phoneNumber[0] = getDefaultPhoneNumber();
-    //    } catch (Exception e) {
-    //        // Handle the exception 
-    //        System.err.println("Error getting phone number: " + e.getMessage()); 
-    //        phoneNumber[0] = null; 
-    //    }
-    //  });
-    //  thread.start(); 
-    //  try {
-    //      thread.join(); // Wait for the thread to finish
-    //  } catch (InterruptedException e) {
-    //      // Handle the interruption appropriately
-    //      System.err.println("Thread interrupted: " + e.getMessage());
-    //      phoneNumber[0] = null;  // Indicate an error
-    //  }
-    //  return phoneNumber[0]; 
-    //}
-
     @ReactMethod
     public void generateIdentifier(String phoneNumber, Promise promise) {
         // Get system time
