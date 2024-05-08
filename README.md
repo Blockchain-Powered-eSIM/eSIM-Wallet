@@ -1,4 +1,4 @@
-# Blockchain Powered Local Profile Assistant App
+# eSIM Wallet
 
 This project is the codebase for a LPA app developed to create eSIM based wallets which allow users to interact with blockchain.
 Right now this app only works on android. iOS support is planned in the future.
@@ -142,6 +142,8 @@ Refer to [package.json](https://github.com/Blockchain-Powered-eSIM/LPA/blob/main
 
 **Minimum API Level required is 29**
 
+Setup and execution instructions using Detox for end-to-end (E2E) testing and Jest for unit testing is laid out [here](https://github.com/Blockchain-Powered-eSIM/eSIM-Wallet/blob/main/e2e/README.md).
+
 ## Permissions required for Android
 
 ### List of core android services used in the project:
@@ -167,81 +169,19 @@ For more details about these permissions reference
 - https://developer.android.com/reference/android/Manifest.permission#READ_PRECISE_PHONE_STATE
 - https://source.android.com/docs/core/connect/esim-overview#carrier-privileges
 
-## Fetch Methods
+## Android Native Modules
 
-### EID: [getEID()](https://github.com/Blockchain-Powered-eSIM/LPA/blob/main/android/app/src/main/java/com/lpaapp/EuiccBridge/EuiccManagerModule.java)
+### [DeviceInfoBridge](https://github.com/Blockchain-Powered-eSIM/eSIM-Wallet/blob/main/android/app/src/main/java/com/lpaapp/DeviceInfoBridge/README.md)
+The 'DeviceInfoBridge' provides functionality to React Native applications to interact with SIM card data on Android devices. It allows the retrieval of SIM card information, eSIM support checks, and eSIM setup functionalities (given relevant permissions are given to the application).
 
-```java
-// Getting the EID
-    @ReactMethod
-    public void getEID(Promise promise) {
-        //Log.d(TAG, "Carrier Privilege State is:" + mTelephonyManager.hasCarrierPrivileges());
-        try {
-            initEuiccManager();
-            if(mTelephonyManager.hasCarrierPrivileges()){
-              if (mEuiccManager.isEnabled()) {
-                  String eid = mEuiccManager.getEid();
-                  promise.resolve(eid);
-              } else {
-                  promise.reject(E_NO_EID, "eUICC Manager is not enabled");
-              }
-            } else {
-                promise.reject(E_NO_CARRIER_PRIVILEGES, "hasCarrierPrivileges check failed");
-            }
-        } catch (Exception e) {
-            promise.reject("Error", e.getMessage());
-        }
-    }
-```
+### [ECKeyManager](https://github.com/Blockchain-Powered-eSIM/eSIM-Wallet/blob/main/android/app/src/main/java/com/lpaapp/ECKeyManager/README.md)
+This native module exposes java functions and react methods that deal with the generation and management of ECDSA keys. To generate Ethereum keys, the native module uses `Web3j` and `BouncyCastle` libraries. The EC key pair is generated using the `secp256k1` EC.
 
-### SIM Info: [subscriptionInfos<>](https://github.com/Blockchain-Powered-eSIM/LPA/blob/main/android/app/src/main/java/com/lpaapp/DeviceInfoBridge/SimDataModule.java)
+### [EuiccBridge](https://github.com/Blockchain-Powered-eSIM/eSIM-Wallet/blob/main/android/app/src/main/java/com/lpaapp/EuiccBridge/README.md)
+The `EuiccBridge` provides an interface for React Native applications to interact with the embedded Universal Integrated Circuit Card (eUICC).
 
-```java
-//via
-TelephonyManager mTelephonyManager = (TelephonyManager) mReactContext.getSystemService(Context.TELEPHONY_SERVICE);
+### [IdentityManager](https://github.com/Blockchain-Powered-eSIM/eSIM-Wallet/blob/main/android/app/src/main/java/com/lpaapp/IdentityManager/README.md)
+The `IdentityManager` provides functionalities to React Native applications to interact with device and subscriber identity information on Android devices. It allows the retrieval of phone numbers for the default SIM, screen resolution, and generates a unique identifier using secure hashing mechanisms.
 
-//through
-SubscriptionManager mSubscriptionManager = (SubscriptionManager) mReactContext.getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE);
-
-//Listing SIM Info
-List<SubscriptionInfo> subscriptionInfos = mSubscriptionManager.getActiveSubscriptionInfoList();
-
-            //List
-            CharSequence carrierName = subInfo.getCarrierName();
-            String countryIso = subInfo.getCountryIso();
-            int dataRoaming = subInfo.getDataRoaming(); // 1 is enabled ; 0 is disabled
-            CharSequence displayName = subInfo.getDisplayName();
-            String iccId = subInfo.getIccId();
-            int mcc = subInfo.getMcc();
-            int mnc = subInfo.getMnc();
-            int simSlotIndex = subInfo.getSimSlotIndex();
-            int subscriptionId = subInfo.getSubscriptionId();
-            int networkRoaming = mTelephonyManager.isNetworkRoaming() ? 1 : 0;
-
-```
-
-### Phone Number: [getDefaultPhoneNumber()](https://github.com/Blockchain-Powered-eSIM/LPA/blob/main/android/app/src/main/java/com/lpaapp/IdentityManager/IdentityManagerModule.java)
-
-```java
-@ReactMethod
-    public void getDefaultPhoneNumber(Promise promise) {
-      if (ActivityCompat.checkSelfPermission(mReactContext, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
-        initSubscriptionManager();
-        int defaultSubscriptionID = mSubscriptionManager.getDefaultSubscriptionId();
-        SubscriptionInfo defaultSubscription = mSubscriptionManager.getActiveSubscriptionInfo(defaultSubscriptionID);
-        if (defaultSubscription != null) {
-            String phoneNumber;
-            int subscriptionId = defaultSubscription.getSubscriptionId();
-            // getPhoneNumber() method only works for android 13 and above
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-              phoneNumber = mSubscriptionManager.getPhoneNumber(subscriptionId);
-            } else {
-              phoneNumber = mTelephonyManager.getLine1Number();
-            }
-            promise.resolve(phoneNumber);
-        } else {
-            promise.reject(E_NO_DEFAULT_SUBSCRIPTION, "Default Subscription is null"); // Promise reject if no default subscription
-        }
-      }
-    }
-```
+### [KeyStoreBridge](https://github.com/Blockchain-Powered-eSIM/eSIM-Wallet/blob/main/android/app/src/main/java/com/lpaapp/KeyStoreBridge/README.md)
+The `KeyStoreBridge` provides secure key management (`RSA` and `ECDSA`) functionalities within a React Native application, leveraging Android's native KeyStore system to generate, store, and manage cryptographic keys and certificates. This module is specifically tailored for Android devices and offers methods to securely handle encryption keys and perform encryption/decryption operations.
