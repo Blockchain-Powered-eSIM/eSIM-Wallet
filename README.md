@@ -1,6 +1,6 @@
 # eSIM Wallet
 
-This project is the codebase for a LPA app developed to create eSIM based wallets which allow users to interact with blockchain.
+This project is the codebase for a eSIM-Wallet app developed to create eSIM based wallets which allow users to interact with blockchain.
 Right now this app only works on android. iOS support is planned in the future.
 
 ## Project setup
@@ -77,7 +77,7 @@ Verify that `ANDROID_HOME` has been set by running `echo $ANDROID_HOME` and the 
 ### Clone the project
 
 ```sh
-git clone https://github.com/Blockchain-Powered-eSIM/LPA.git
+https://github.com/Blockchain-Powered-eSIM/eSIM-Wallet.git
 ```
 
 This project uses React Native's built-in command line interface. Rather than install and manage a specific version of the CLI globally, we recommend accessing the current version at runtime using `npx`, which ships with Node.js. With `npx react-native <command>`, the current stable version of the CLI will be downloaded and executed when the command is run.
@@ -93,7 +93,7 @@ To use a physical android device. just connect it to you computer and enable USB
 
 To use an AVD for development and testing, create one using Android Studio Device Manager.
 
-Open `./LPA/android`, to see the list of available Android Virtual Devices (AVDs) open "AVD Manager" in Android Studio. If no virtual device available, create a new one by following the instructions [here](https://developer.android.com/studio/run/managing-avds.html). Preferred image for testing is `UpsideDownCake API Level 34`. **Make sure that the Android version on your virtual device is greater than Android 10 (or API level 30)**
+Open `./eSIM-Wallet/android`, to see the list of available Android Virtual Devices (AVDs) open "AVD Manager" in Android Studio. If no virtual device available, create a new one by following the instructions [here](https://developer.android.com/studio/run/managing-avds.html). Preferred image for testing is `UpsideDownCake API Level 34`. **Make sure that the Android version on your virtual device is greater than Android 10 (or API level 30)**
 
 The project uses some react native libraries as dependencies. Run the follwing command (from the project working directory) to make sure all required libraries are installed before your first build.
 
@@ -138,7 +138,7 @@ The deployed code is tested on macOS 14.1.1 for Android OS,
 node version 19.5.0, JDK version 17.0.1, openjdk 17.0.10 and
 OpenJDK Runtime Environment Zulu17.48+15-CA (build 17.0.10+7-LTS)
 
-Refer to [package.json](https://github.com/Blockchain-Powered-eSIM/LPA/blob/main/package.json) for more details on versions of tools used for development and testing.
+Refer to [package.json](https://github.com/Blockchain-Powered-eSIM/eSIM-Wallet/blob/main/package.json) for more details on versions of tools used for development and testing.
 
 **Minimum API Level required is 29**
 
