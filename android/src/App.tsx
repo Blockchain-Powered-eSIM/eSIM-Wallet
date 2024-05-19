@@ -19,19 +19,22 @@ import {
 
 import { Button } from './components/Button';
 import { Modal } from './components/Modal';
+import { getData } from './endpoints/api_handles';
 var RNFS = require('react-native-fs');
 
 import {MMKVLoader, useMMKVStorage} from 'react-native-mmkv-storage';
 
 interface ILog {
-  command: string;
-  result: any;
+command: string;
+result: any;
 }
 
 export default function App() {
   const [mapping, setMapping] = useState(null);
   const [isModalVisible, setIsModalVisible] = React.useState(false);
   const [identifier, setIdentifier] = React.useState('');
+  const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
   const storageObj = new MMKVLoader().initialize();
 
   const toggleModalVisibility = () => {
@@ -60,42 +63,56 @@ export default function App() {
   const requestPhoneStatePermission = async () => {
     try {
       await PermissionsAndroid.requestMultiple([
-        PermissionsAndroid.PERMISSIONS.READ_PHONE_STATE,
-        PermissionsAndroid.PERMISSIONS.READ_PHONE_NUMBERS,
+          PermissionsAndroid.PERMISSIONS.READ_PHONE_STATE,
+          PermissionsAndroid.PERMISSIONS.READ_PHONE_NUMBERS,
       ]).then(result => {
         if (
-          result['android.permission.READ_PHONE_STATE'] &&
-          result['android.permission.READ_PHONE_NUMBERS'] === 'granted'
-        ) {
-          this.setState({permissionsGranted: true});
+            result['android.permission.READ_PHONE_STATE'] &&
+            result['android.permission.READ_PHONE_NUMBERS'] === 'granted'
+           ) {
+        this.setState({permissionsGranted: true});
         } else if (
-          result['android.permission.READ_PHONE_STATE'] ||
-          result['android.permission.READ_PHONE_NUMBERS'] === 'never_ask_again'
-        ) {
-          this.refs.toast.show(
+            result['android.permission.READ_PHONE_STATE'] ||
+            result['android.permission.READ_PHONE_NUMBERS'] === 'never_ask_again'
+            ) {
+        this.refs.toast.show(
             'Please Go into Settings -> Applications -> APP_NAME -> Permissions and Allow permissions to continue',
-          );
+            );
         }
-      });
+        });
     } catch (err) {
       console.log(err);
     }
   };
 
   useEffect(() => {
-    console.log('UseEffect Asking permission');
-    (async () => {
-      await requestPhoneStatePermission();
-    })();
-  }, []);
+      console.log('UseEffect Asking permission');
+      (async () => {
+       await requestPhoneStatePermission();
+       })();
+      }, []);
 
   useEffect(() => {
-    (async () => {
-      if (!isModalVisible) return;
-      const id = await getUniqueIdentifier();
-      setIdentifier(id);
-    })();
-  }, [isModalVisible]);
+      (async () => {
+       if (!isModalVisible) return;
+       const id = await getUniqueIdentifier();
+       setIdentifier(id);
+       })();
+      }, [isModalVisible]);
+
+  // Template to get data associated to device identifier from database
+  //useEffect(() => {
+  //    const fetchData = async () => {
+  //    try {
+  //    const result = await getData('some-user-id');
+  //    setData(result);
+  //    } catch (err) {
+  //    setError(err);
+  //    }
+  //    };
+
+  //    fetchData();
+  //    }, []);
 
   const getUniqueIdentifier = async () => {
     const phNumber =
@@ -153,43 +170,43 @@ export default function App() {
   };
 
   return (
-    <View style={styles.container}>
+      <View style={styles.container}>
       <Text style={styles.title}>eSIM Wallet app</Text>
       <View style={styles.separator} />
       <Button title="Fetch Unique ID" onPress={toggleModalVisibility} />
       <Modal isVisible={isModalVisible}>
-        <Modal.Container>
-          <Modal.Header title="Device Data" />
-          <Modal.Body>
-            <Text style={styles.text}>{identifier}</Text>
-          </Modal.Body>
-          <Modal.Footer>
-            <Button title="Back" onPress={toggleModalVisibility} />
-          </Modal.Footer>
-        </Modal.Container>
+      <Modal.Container>
+      <Modal.Header title="Device Data" />
+      <Modal.Body>
+      <Text style={styles.text}>{identifier}</Text>
+      </Modal.Body>
+      <Modal.Footer>
+      <Button title="Back" onPress={toggleModalVisibility} />
+      </Modal.Footer>
+      </Modal.Container>
       </Modal>
-    </View>
-  );
+      </View>
+      );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  text: {
-    fontSize: 16,
-    fontWeight: '400',
-    textAlign: 'center',
-  },
-  separator: {
-    marginVertical: 30,
-    height: 1,
-    width: '80%',
-  },
+container: {
+flex: 1,
+alignItems: 'center',
+justifyContent: 'center',
+},
+title: {
+fontSize: 20,
+fontWeight: 'bold',
+},
+text: {
+fontSize: 16,
+fontWeight: '400',
+textAlign: 'center',
+},
+separator: {
+marginVertical: 30,
+height: 1,
+width: '80%',
+},
 });
