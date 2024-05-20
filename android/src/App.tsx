@@ -115,9 +115,9 @@ export default function App() {
   //    }, []);
 
   const getUniqueIdentifier = async () => {
-    const phNumber =
-      await NativeModules.IdentityManager.getDefaultPhoneNumber();
-    console.log('phNumber: ', phNumber);
+    const androidID =
+      await NativeModules.IdentityManager.getAndroidID();
+    console.log('Android_ID: ', androidID);
 
     const retrievedHash = retrieveData(phNumber);
     console.log('retrievedHash: ', retrievedHash);
@@ -127,7 +127,7 @@ export default function App() {
     if(retrievedHash == null) {
       try {
         const uniqueIdentifier =
-          await NativeModules.IdentityManager.generateIdentifier(phNumber);
+          await NativeModules.IdentityManager.generateIdentifier(androidID);
         console.log('uniqueIdentifier: ', uniqueIdentifier);
         storeData(phNumber, uniqueIdentifier);
 
