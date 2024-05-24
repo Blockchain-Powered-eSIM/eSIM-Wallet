@@ -122,104 +122,106 @@ export default function App() {
       }, [isModalVisible]);
 
   const getUniqueIdentifier = async () => {
-    const androidID =
-      await NativeModules.IdentityManager.getAndroidID();
-    console.log('Android_ID: ', androidID);
+    try {
+      const androidID =
+        await NativeModules.IdentityManager.getAndroidID();
+      console.log('Android_ID: ', androidID);
 
-    const retrievedHash = retrieveData(androidID);
-    console.log('retrievedHash: ', retrievedHash);
+      const retrievedHash = retrieveData(androidID);
+      console.log('retrievedHash: ', retrievedHash);
 
-    await checkKeyStore();
+      await checkKeyStore();
 
-    if (retrievedHash == null) {
-      const uniqueIdentifier =
-        await NativeModules.IdentityManager.generateIdentifier(androidID);
-      console.log('uniqueIdentifier: ', uniqueIdentifier);
-      storeData(androidID, uniqueIdentifier);
+      if (retrievedHash == null) {
+        const uniqueIdentifier =
+          await NativeModules.IdentityManager.generateIdentifier(androidID);
+        console.log('uniqueIdentifier: ', uniqueIdentifier);
+        storeData(androidID, uniqueIdentifier);
 
-      return retrieveData(androidID);
+        return retrieveData(androidID);
+
+      } else {
+        return retrieveData(androidID);
+      }    
     } catch (error) {
       console.log('error: ', error);
     }
-  } else {
-    return retrieveData(androidID);
-  }
-};
+  };
 
-const checkKeyStore = async () => {
-  try {
-    const appAlias = 'TestAPP';
-    const {encrypted_key, msg} =
-      await NativeModules.KeyStore.generateAndStoreECKeyPair(
-          appAlias,
+  const checkKeyStore = async () => {
+    try {
+      const appAlias = 'TestAPP';
+      const {encrypted_key, msg} =
+        await NativeModules.KeyStore.generateAndStoreECKeyPair(
+            appAlias,
+            'Test123',
+            RNFS.DownloadDirectoryPath,
+            );
+      console.log(msg);
+      console.log(encrypted_key);
+
+      storeData(appAlias, encrypted_key);
+      console.log('Encrypted Key Securely Stored');
+
+      setEncryptedKey(encrypted_key);
+      toggleKeyModalVisibility();
+    } catch (error) {
+      console.log('Error: ', error);
+    }
+  };
+
+  const handleKMM = async () => {
+    try {
+      const mnemonic = await NativeModules.ECKeyManager.generateBIP39Mnemonic();
+      console.log(mnemonic);
+
+      const fileName = await NativeModules.ECKeyManager.generateAndSaveWallet(
+          mnemonic,
           'Test123',
           RNFS.DownloadDirectoryPath,
           );
-    console.log(msg);
-    console.log(encrypted_key);
+      console.log('fileName: ', fileName);
 
-    storeData(appAlias, encrypted_key);
-    console.log('Encrypted Key Securely Stored');
+      const address = await NativeModules.ECKeyManager.loadCredentialsFromFile(
+          'Test123',
+          `${RNFS.DownloadDirectoryPath}/${fileName}`,
+          );
+      console.log('address: ', address);
+    } catch (error) {
+      console.log('Error: ', error);
+    }
+  };
 
-    setEncryptedKey(encrypted_key);
-    toggleKeyModalVisibility();
-  } catch (error) {
-    console.log('Error: ', error);
-  }
-};
-
-const handleKMM = async () => {
-  try {
-    const mnemonic = await NativeModules.ECKeyManager.generateBIP39Mnemonic();
-    console.log(mnemonic);
-
-    const fileName = await NativeModules.ECKeyManager.generateAndSaveWallet(
-        mnemonic,
-        'Test123',
-        RNFS.DownloadDirectoryPath,
-        );
-    console.log('fileName: ', fileName);
-
-    const address = await NativeModules.ECKeyManager.loadCredentialsFromFile(
-        'Test123',
-        `${RNFS.DownloadDirectoryPath}/${fileName}`,
-        );
-    console.log('address: ', address);
-  } catch (error) {
-    console.log('Error: ', error);
-  }
-};
-
-return (
-    <View style={styles.container}>
-    <Text style={styles.title}>eSIM Wallet app</Text>
-    <View style={styles.separator} />
-    <Button title="Fetch Unique ID" onPress={toggleModalVisibility} />
-    <Button title="Generate EC KeyPair" onPress={checkKeyStore} />
-    <Modal isVisible={isModalVisible}>
-    <Modal.Container>
-    <Modal.Header title="Device Data" />
-    <Modal.Body>
-    <Text style={styles.text}>{identifier}</Text>
-    </Modal.Body>
-    <Modal.Footer>
-    <Button title="Back" onPress={toggleModalVisibility} />
-    </Modal.Footer>
-    </Modal.Container>
-    </Modal>
-    <Modal isVisible={isKeyModalVisible}>
-    <Modal.Container>
-    <Modal.Header title="Encrypted Private Key" />
-    <Modal.Body>
-<Text style={styles.text}>{encryptedKey}</Text>
-</Modal.Body>
-<Modal.Footer>
-<Button title="Back" onPress={toggleKeyModalVisibility} />
-</Modal.Footer>
-</Modal.Container>
-</Modal>
-</View>
-);
+  return (
+      <View style={styles.container}>
+      <Text style={styles.title}>eSIM Wallet app</Text>
+      <View style={styles.separator} />
+      <Button title="Fetch Unique ID" onPress={toggleModalVisibility} />
+      <Button title="Generate EC KeyPair" onPress={checkKeyStore} />
+      <Modal isVisible={isModalVisible}>
+      <Modal.Container>
+      <Modal.Header title="Device Data" />
+      <Modal.Body>
+      <Text style={styles.text}>{identifier}</Text>
+      </Modal.Body>
+      <Modal.Footer>
+      <Button title="Back" onPress={toggleModalVisibility} />
+      </Modal.Footer>
+      </Modal.Container>
+      </Modal>
+      <Modal isVisible={isKeyModalVisible}>
+      <Modal.Container>
+      <Modal.Header title="Encrypted Private Key" />
+      <Modal.Body>
+      <Text style={styles.text}>{encryptedKey}</Text>
+      </Modal.Body>
+      <Modal.Footer>
+      <Button title="Back" onPress={toggleKeyModalVisibility} />
+      </Modal.Footer>
+      </Modal.Container>
+      </Modal>
+      </View>
+      );
 }
 
 const styles = StyleSheet.create({
