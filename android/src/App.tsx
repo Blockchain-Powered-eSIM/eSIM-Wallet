@@ -35,6 +35,7 @@ export default function App() {
   const [identifier, setIdentifier] = useState('');
   const [encryptedKey, setEncryptedKey] = useState('');
   const [isKeyModalVisible, setIsKeyModalVisible] = useState(false);
+  const [isTransactionModalVisible, setIsTransactionModalVisible] = useState(false);
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [permissionsGranted, setPermissionsGranted] = useState(false);
@@ -48,6 +49,9 @@ export default function App() {
     setIsKeyModalVisible(visible => !visible);
   };
 
+  const toggleTransactionModalVisibility = () => {
+      setIsTransactionModalVisible(visible => !visible);
+    };
   // Store and retrieve data
   // TODO: Handle other datatypes
   const storeData = (key, value) => {
@@ -191,12 +195,44 @@ export default function App() {
     }
   };
 
+  // Call the exposed method when the "Sign Transaction" button is pressed
+  const handleSignTransaction = async () => {
+    try {
+      const keystorePath = '/path/to/keystore/file';
+      const walletPassword = 'walletPassword';
+      const to = '0xC479b44CF3Af681700F900ed7767154be43177e1';
+      const from = '0x7E97763E973F4E3D3D347559BD7D812EB8EA88DA'; // Temporary
+      const value = '1000000000000000'; // in wei
+      const calldata = ''; // Fill with appropriate value if needed
+      const gasPrice = '27000000000'; // in wei
+      const gasLimit = '21000';
+      const nonce = ''; // Fill with appropriate value
+
+      const transactionHash =
+        await NativeModules.ECTransactionManager.initiateTransaction(
+          keystorePath,
+          walletPassword,
+          to,
+          from,
+          value,
+          calldata,
+          gasPrice,
+          gasLimit,
+          nonce,
+        );
+
+      console.log('Transaction hash:', transactionHash);
+      toggleTransactionModalVisibility();
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>eSIM Wallet app</Text>
       <View style={styles.separator} />
       <Button title="Fetch Unique ID" onPress={toggleModalVisibility} />
-      <Button title="Generate EC KeyPair" onPress={checkKeyStore} />
       <Modal isVisible={isModalVisible}>
         <Modal.Container>
           <Modal.Header title="Device Data" />
@@ -208,6 +244,7 @@ export default function App() {
           </Modal.Footer>
         </Modal.Container>
       </Modal>
+      <Button title="Generate EC KeyPair" onPress={checkKeyStore} />
       <Modal isVisible={isKeyModalVisible}>
         <Modal.Container>
           <Modal.Header title="Encrypted Private Key" />
@@ -219,6 +256,18 @@ export default function App() {
           </Modal.Footer>
         </Modal.Container>
       </Modal>
+      <Button title="Sign Transaction" onPress={handleSignTransaction} />
+      <Modal isVisible={isTransactionModalVisible}>
+              <Modal.Container>
+                <Modal.Header title="Transaction Details" />
+                <Modal.Body>
+                  <Text style={styles.text}>{"TEST-Tx"}</Text>
+                </Modal.Body>
+                <Modal.Footer>
+                  <Button title="Back" onPress={toggleTransactionModalVisibility} />
+                </Modal.Footer>
+              </Modal.Container>
+            </Modal>
     </View>
   );
 }

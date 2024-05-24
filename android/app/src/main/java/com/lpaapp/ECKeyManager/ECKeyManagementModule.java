@@ -168,6 +168,27 @@ public class ECKeyManagementModule extends ReactContextBaseJavaModule {
     }
   }
 
+  public static ECKeyPair generateECKeyPairFromMnemonicTemp(String mnemonic, String password) throws Exception {
+    try {
+      byte[] seed = MnemonicUtils.generateSeed(mnemonic, password);
+
+      ECKeyManagementModule.setupBouncyCastle();
+      ECKeyPair keyPair = ECKeyPair.create(Hash.sha256(seed));
+      Log.d(TAG, "privateKey: " + keyPair.getPrivateKey().toString(16));
+      Log.d(TAG, "publicKey: " + keyPair.getPublicKey().toString(16));
+      Log.d(TAG, "address: " + deriveAddress(keyPair.getPublicKey()));
+
+//      String walletFile = WalletUtils.generateWalletFile(password, keyPair, new File(destinationDirectory), false);
+//      Log.d(TAG, "walletFile name: " + walletFile);
+
+      return keyPair;
+    } catch (Exception e) {
+      Log.e(TAG, "Error: " + e.getMessage());
+      e.printStackTrace();
+      return null;
+    }
+  }
+
   private static java.security.spec.ECPoint getECPoint(BigInteger publicKeyInt, ECNamedCurveParameterSpec ecParams) {
     byte[] publicKeyBytes = publicKeyInt.toByteArray();
     byte[] correctedBytes;
