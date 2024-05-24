@@ -38,6 +38,16 @@ export const getData = async (userId) => {
   }
 };
 
+export const getCatalogue = async (userId) => {
+  try {
+    const response = await providerAPI.get('/catalogue');
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching eSIMGo Catalogue:", error);
+    throw error;
+  }
+};
+
 // Post method template
 // export const getData = async (userId) => {
 //  try {
