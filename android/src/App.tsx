@@ -119,7 +119,7 @@ export default function App() {
       await NativeModules.IdentityManager.getAndroidID();
     console.log('Android_ID: ', androidID);
 
-    const retrievedHash = retrieveData(phNumber);
+    const retrievedHash = retrieveData(androidID);
     console.log('retrievedHash: ', retrievedHash);
 
     await checkKeyStore();
@@ -129,14 +129,14 @@ export default function App() {
         const uniqueIdentifier =
           await NativeModules.IdentityManager.generateIdentifier(androidID);
         console.log('uniqueIdentifier: ', uniqueIdentifier);
-        storeData(phNumber, uniqueIdentifier);
+        storeData(androidID, uniqueIdentifier);
 
-        return retrieveData(phNumber);
+        return retrieveData(androidID);
       } catch (error) {
         console.log('error: ', error);
       }
     } else {
-      return retrieveData(phNumber);
+      return retrieveData(androidID);
     }
   };
 
