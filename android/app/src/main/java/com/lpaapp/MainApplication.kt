@@ -19,6 +19,7 @@ import com.lpaapp.DeviceInfoBridge.SimDataPackage
 import com.lpaapp.IdentityManager.IdentityManagerPackage
 import com.lpaapp.ECKeyManager.ECKeyManagementPackage
 import com.lpaapp.KeyStoreBridge.KeyStorePackage
+import com.lpaapp.Web3Manager.ECTransactionPackage
 
 class MainApplication : Application(), ReactApplication {
 
@@ -33,6 +34,7 @@ class MainApplication : Application(), ReactApplication {
               add(IdentityManagerPackage())
               add(ECKeyManagementPackage())
               add(KeyStorePackage())
+              add(ECTransactionPackage())
             }
 
         override fun getJSMainModuleName(): String = "index"
