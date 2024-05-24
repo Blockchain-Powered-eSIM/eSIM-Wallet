@@ -8,13 +8,13 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {
   NativeModules,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-  TouchableOpacity,
-  PermissionsAndroid,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
+    TouchableOpacity,
+    PermissionsAndroid,
 } from 'react-native';
 
 import {Button} from './components/Button';
@@ -25,8 +25,8 @@ var RNFS = require('react-native-fs');
 import {MMKVLoader, useMMKVStorage} from 'react-native-mmkv-storage';
 
 interface ILog {
-  command: string;
-  result: any;
+command: string;
+result: any;
 }
 
 export default function App() {
@@ -70,23 +70,23 @@ export default function App() {
   const requestPhoneStatePermission = async () => {
     try {
       await PermissionsAndroid.requestMultiple([
-        PermissionsAndroid.PERMISSIONS.READ_PHONE_STATE,
-        PermissionsAndroid.PERMISSIONS.READ_PHONE_NUMBERS,
+          PermissionsAndroid.PERMISSIONS.READ_PHONE_STATE,
+          PermissionsAndroid.PERMISSIONS.READ_PHONE_NUMBERS,
       ]).then(result => {
         if (
-          result['android.permission.READ_PHONE_STATE'] &&
-          result['android.permission.READ_PHONE_NUMBERS'] === 'granted'
-        ) {
-          this.setState({permissionsGranted: true});
+            result['android.permission.READ_PHONE_STATE'] &&
+            result['android.permission.READ_PHONE_NUMBERS'] === 'granted'
+           ) {
+        this.setState({permissionsGranted: true});
         } else if (
-          result['android.permission.READ_PHONE_STATE'] ||
-          result['android.permission.READ_PHONE_NUMBERS'] === 'never_ask_again'
-        ) {
-          this.refs.toast.show(
+            result['android.permission.READ_PHONE_STATE'] ||
+            result['android.permission.READ_PHONE_NUMBERS'] === 'never_ask_again'
+            ) {
+        this.refs.toast.show(
             'Please Go into Settings -> Applications -> APP_NAME -> Permissions and Allow permissions to continue',
-          );
+            );
         }
-      });
+        });
     } catch (err) {
       console.log(err);
     }
@@ -107,158 +107,139 @@ export default function App() {
   //    }, []);
 
   useEffect(() => {
-    console.log('UseEffect Asking permission');
-    (async () => {
-      await requestPhoneStatePermission();
-    })();
-  }, []);
+      console.log('UseEffect Asking permission');
+      (async () => {
+       await requestPhoneStatePermission();
+       })();
+      }, []);
 
   useEffect(() => {
-    (async () => {
-      if (!isModalVisible) return;
-      const id = await getUniqueIdentifier();
-      setIdentifier(id);
-    })();
-  }, [isModalVisible]);
+      (async () => {
+       if (!isModalVisible) return;
+       const id = await getUniqueIdentifier();
+       setIdentifier(id);
+       })();
+      }, [isModalVisible]);
 
   const getUniqueIdentifier = async () => {
-<<<<<<< HEAD
     const androidID =
       await NativeModules.IdentityManager.getAndroidID();
     console.log('Android_ID: ', androidID);
 
     const retrievedHash = retrieveData(androidID);
     console.log('retrievedHash: ', retrievedHash);
-=======
-    try {
-      const phNumber =
-        await NativeModules.IdentityManager.getDefaultPhoneNumber();
-      console.log('phNumber: ', phNumber);
 
-      const retrievedHash = retrieveData(phNumber);
-      console.log('retrievedHash: ', retrievedHash);
->>>>>>> LPAorg_main/main
+    await checkKeyStore();
 
-      await checkKeyStore();
+    if (retrievedHash == null) {
+      const uniqueIdentifier =
+        await NativeModules.IdentityManager.generateIdentifier(androidID);
+      console.log('uniqueIdentifier: ', uniqueIdentifier);
+      storeData(androidID, uniqueIdentifier);
 
-      if (retrievedHash == null) {
-        const uniqueIdentifier =
-          await NativeModules.IdentityManager.generateIdentifier(androidID);
-        console.log('uniqueIdentifier: ', uniqueIdentifier);
-        storeData(androidID, uniqueIdentifier);
-
-<<<<<<< HEAD
-        return retrieveData(androidID);
-      } catch (error) {
-        console.log('error: ', error);
-      }
-    } else {
       return retrieveData(androidID);
-=======
-        return retrieveData(phNumber);
-      } else {
-        return retrieveData(phNumber);
-      }
     } catch (error) {
       console.log('error: ', error);
->>>>>>> LPAorg_main/main
     }
-  };
+  } else {
+    return retrieveData(androidID);
+  }
+};
 
-  const checkKeyStore = async () => {
-    try {
-      const appAlias = 'TestAPP';
-      const {encrypted_key, msg} =
-        await NativeModules.KeyStore.generateAndStoreECKeyPair(
+const checkKeyStore = async () => {
+  try {
+    const appAlias = 'TestAPP';
+    const {encrypted_key, msg} =
+      await NativeModules.KeyStore.generateAndStoreECKeyPair(
           appAlias,
           'Test123',
           RNFS.DownloadDirectoryPath,
-        );
-      console.log(msg);
-      console.log(encrypted_key);
+          );
+    console.log(msg);
+    console.log(encrypted_key);
 
-      storeData(appAlias, encrypted_key);
-      console.log('Encrypted Key Securely Stored');
+    storeData(appAlias, encrypted_key);
+    console.log('Encrypted Key Securely Stored');
 
-      setEncryptedKey(encrypted_key);
-      toggleKeyModalVisibility();
-    } catch (error) {
-      console.log('Error: ', error);
-    }
-  };
+    setEncryptedKey(encrypted_key);
+    toggleKeyModalVisibility();
+  } catch (error) {
+    console.log('Error: ', error);
+  }
+};
 
-  const handleKMM = async () => {
-    try {
-      const mnemonic = await NativeModules.ECKeyManager.generateBIP39Mnemonic();
-      console.log(mnemonic);
+const handleKMM = async () => {
+  try {
+    const mnemonic = await NativeModules.ECKeyManager.generateBIP39Mnemonic();
+    console.log(mnemonic);
 
-      const fileName = await NativeModules.ECKeyManager.generateAndSaveWallet(
+    const fileName = await NativeModules.ECKeyManager.generateAndSaveWallet(
         mnemonic,
         'Test123',
         RNFS.DownloadDirectoryPath,
-      );
-      console.log('fileName: ', fileName);
+        );
+    console.log('fileName: ', fileName);
 
-      const address = await NativeModules.ECKeyManager.loadCredentialsFromFile(
+    const address = await NativeModules.ECKeyManager.loadCredentialsFromFile(
         'Test123',
         `${RNFS.DownloadDirectoryPath}/${fileName}`,
-      );
-      console.log('address: ', address);
-    } catch (error) {
-      console.log('Error: ', error);
-    }
-  };
+        );
+    console.log('address: ', address);
+  } catch (error) {
+    console.log('Error: ', error);
+  }
+};
 
-  return (
+return (
     <View style={styles.container}>
-      <Text style={styles.title}>eSIM Wallet app</Text>
-      <View style={styles.separator} />
-      <Button title="Fetch Unique ID" onPress={toggleModalVisibility} />
-      <Button title="Generate EC KeyPair" onPress={checkKeyStore} />
-      <Modal isVisible={isModalVisible}>
-        <Modal.Container>
-          <Modal.Header title="Device Data" />
-          <Modal.Body>
-            <Text style={styles.text}>{identifier}</Text>
-          </Modal.Body>
-          <Modal.Footer>
-            <Button title="Back" onPress={toggleModalVisibility} />
-          </Modal.Footer>
-        </Modal.Container>
-      </Modal>
-      <Modal isVisible={isKeyModalVisible}>
-        <Modal.Container>
-          <Modal.Header title="Encrypted Private Key" />
-          <Modal.Body>
-            <Text style={styles.text}>{encryptedKey}</Text>
-          </Modal.Body>
-          <Modal.Footer>
-            <Button title="Back" onPress={toggleKeyModalVisibility} />
-          </Modal.Footer>
-        </Modal.Container>
-      </Modal>
-    </View>
-  );
+    <Text style={styles.title}>eSIM Wallet app</Text>
+    <View style={styles.separator} />
+    <Button title="Fetch Unique ID" onPress={toggleModalVisibility} />
+    <Button title="Generate EC KeyPair" onPress={checkKeyStore} />
+    <Modal isVisible={isModalVisible}>
+    <Modal.Container>
+    <Modal.Header title="Device Data" />
+    <Modal.Body>
+    <Text style={styles.text}>{identifier}</Text>
+    </Modal.Body>
+    <Modal.Footer>
+    <Button title="Back" onPress={toggleModalVisibility} />
+    </Modal.Footer>
+    </Modal.Container>
+    </Modal>
+    <Modal isVisible={isKeyModalVisible}>
+    <Modal.Container>
+    <Modal.Header title="Encrypted Private Key" />
+    <Modal.Body>
+<Text style={styles.text}>{encryptedKey}</Text>
+</Modal.Body>
+<Modal.Footer>
+<Button title="Back" onPress={toggleKeyModalVisibility} />
+</Modal.Footer>
+</Modal.Container>
+</Modal>
+</View>
+);
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  text: {
-    fontSize: 16,
-    fontWeight: '400',
-    textAlign: 'center',
-  },
-  separator: {
-    marginVertical: 30,
-    height: 1,
-    width: '80%',
-  },
+container: {
+flex: 1,
+alignItems: 'center',
+justifyContent: 'center',
+},
+title: {
+fontSize: 20,
+fontWeight: 'bold',
+},
+text: {
+fontSize: 16,
+fontWeight: '400',
+textAlign: 'center',
+},
+separator: {
+marginVertical: 30,
+height: 1,
+width: '80%',
+},
 });
