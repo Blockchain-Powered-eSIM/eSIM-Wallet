@@ -189,10 +189,13 @@ public class KeyStoreModule extends ReactContextBaseJavaModule {
       // Generate RSA Keys to encrypt the EC private key
       KeyPair RSAKey = generateRSAKeyPair(alias);
 
-      //Encrypt the EC private key
       byte[] ecPrivateKey = ecKey.getPrivateKey().toString(16).getBytes("UTF-8");
       Log.d(TAG, "EC Private key: " + Arrays.toString(ecPrivateKey));
 
+      byte[] ecPublicKey = ecKey.getPublicKey().toString(16).getBytes("UTF-8");
+      Log.d(TAG, "EC Public key: " + Arrays.toString(ecPublicKey));
+
+      //Encrypt the EC private key
       byte[] encryptedECKey = encryptData(ecPrivateKey, RSAKey.getPublic());
       Log.d(TAG, "Encrypted EC Private key: " + Arrays.toString(encryptedECKey));
 
