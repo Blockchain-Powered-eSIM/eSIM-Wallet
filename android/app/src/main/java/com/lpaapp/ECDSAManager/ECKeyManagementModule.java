@@ -1,36 +1,36 @@
-package com.lpaapp.ECKeyManager;
+package com.lpaapp.ECDSAManager;
 
 import java.util.*;
 import java.io.File;
 import java.io.PrintStream;
 import java.math.BigInteger;
-import java.security.KeyPair;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;
-import java.security.Security;
+import java.security.KeyPair;
+import java.security.PrivateKey;
 import java.security.Provider;
 import java.security.PublicKey;
-import java.security.PrivateKey;
 import java.security.SecureRandom;
-import java.security.spec.ECPublicKeySpec;
-import java.security.spec.ECPrivateKeySpec;
+import java.security.Security;
 import java.security.spec.ECParameterSpec;
+import java.security.spec.ECPrivateKeySpec;
+import java.security.spec.ECPublicKeySpec;
 import java.security.spec.EllipticCurve;
-import java.nio.charset.StandardCharsets;
-import org.web3j.crypto.Credentials;
-import org.web3j.crypto.ECKeyPair;
-import org.web3j.crypto.Keys;
-import org.web3j.crypto.Sign;
-import org.web3j.crypto.WalletUtils;
-import org.web3j.crypto.MnemonicUtils;
-import org.web3j.crypto.Hash;
-import org.web3j.utils.Numeric;
-import org.web3j.crypto.Bip39Wallet;
-import org.bouncycastle.math.ec.ECPoint;
+import org.bouncycastle.jcajce.provider.asymmetric.util.EC5Util;
 import org.bouncycastle.jce.ECNamedCurveTable;
-import org.bouncycastle.jce.spec.ECNamedCurveSpec;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.jce.spec.ECNamedCurveParameterSpec;
-import org.bouncycastle.jcajce.provider.asymmetric.util.EC5Util;
+import org.bouncycastle.jce.spec.ECNamedCurveSpec;
+import org.bouncycastle.math.ec.ECPoint;
+import org.web3j.crypto.Bip39Wallet;
+import org.web3j.crypto.Credentials;
+import org.web3j.crypto.ECKeyPair;
+import org.web3j.crypto.Hash;
+import org.web3j.crypto.Keys;
+import org.web3j.crypto.MnemonicUtils;
+import org.web3j.crypto.Sign;
+import org.web3j.crypto.WalletUtils;
+import org.web3j.utils.Numeric;
 
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
@@ -168,27 +168,6 @@ public class ECKeyManagementModule extends ReactContextBaseJavaModule {
     }
   }
 
-  public static ECKeyPair generateECKeyPairFromMnemonicTemp(String mnemonic, String password) throws Exception {
-    try {
-      byte[] seed = MnemonicUtils.generateSeed(mnemonic, password);
-
-      ECKeyManagementModule.setupBouncyCastle();
-      ECKeyPair keyPair = ECKeyPair.create(Hash.sha256(seed));
-      Log.d(TAG, "privateKey: " + keyPair.getPrivateKey().toString(16));
-      Log.d(TAG, "publicKey: " + keyPair.getPublicKey().toString(16));
-      Log.d(TAG, "address: " + deriveAddress(keyPair.getPublicKey()));
-
-//      String walletFile = WalletUtils.generateWalletFile(password, keyPair, new File(destinationDirectory), false);
-//      Log.d(TAG, "walletFile name: " + walletFile);
-
-      return keyPair;
-    } catch (Exception e) {
-      Log.e(TAG, "Error: " + e.getMessage());
-      e.printStackTrace();
-      return null;
-    }
-  }
-
   private static java.security.spec.ECPoint getECPoint(BigInteger publicKeyInt, ECNamedCurveParameterSpec ecParams) {
     byte[] publicKeyBytes = publicKeyInt.toByteArray();
     byte[] correctedBytes;
@@ -262,61 +241,22 @@ public class ECKeyManagementModule extends ReactContextBaseJavaModule {
       promise.reject(e);
     }
   }
-
-  // TODO: Remove. Only for testing
-  @ReactMethod
-  public static void loadCredentialsFromFile(String password, String filePath, Promise promise) throws Exception {
-    try {
-      Credentials cred = WalletUtils.loadCredentials(password, filePath);
-      ECKeyPair keyPair = cred.getEcKeyPair();
-      String address = cred.getAddress();
-      String privateKey = keyPair.getPrivateKey().toString(16);
-      String publicKey = keyPair.getPublicKey().toString(16);
-      Log.d(TAG, "getAddress: " + address);
-      Log.d(TAG, "privateKey: " + privateKey);
-      Log.d(TAG, "publicKey: " + publicKey);
-
-      promise.resolve(address);
-    } catch (Exception e) {
-      promise.reject(e);
-    }
-  }
-
-  //    @ReactMethod
-  //    public static void test(String[] args) throws Exception {
-  //        String walletPassword = "Test123";
-  //        String walletPath = "./target/sampleKeystores";
-  //
-  //        // Generate a random EC Key Pair
-  //        ECKeyPair keyPair = generateECKeyPair();
-  //
-  //        // Derive private key from the EC Key Pair
-  //        BigInteger privateKey = keyPair.getPrivateKey();
-  //        System.out.println("Private key (256 bits): " + privateKey.toString(16));
-  //
-  //        // Derive public key from the EC Key Pair
-  //        BigInteger publicKey = keyPair.getPublicKey();
-  //        System.out.println("Public key (512 bits): " + publicKey.toString(16));
-  //        System.out.println("Public key (compressed): " + compressPublicKey(publicKey));
-  //
-  //        // Derive address from the public key
-  //        String address = deriveAddress(publicKey);
-  //        System.out.println("Address: " + address);
-  //
-  //        // Generate keystore file for the EC Key Pair
-  //        String walletFileName = generateKeystoreJSON(walletPassword, walletPath, keyPair);
-  //        System.out.println(walletFileName);
-  //
-  //        String keystorePath = walletPath + File.separator + walletFileName;
-  //
-  //        // Unlock keystore
-  //        ECKeyPair derivedKeys = decryptCredentials(keystorePath, walletPassword).getEcKeyPair();
-  //        System.out.println("Unlocked Private key: " + derivedKeys.getPrivateKey().toString(16));
-  //        System.out.println("Unlocked Public Key " + derivedKeys.getPublicKey().toString(16));
-  //
-  //        // Sign message
-  //        String msg = "TEST";
-  //        String signedMessage = signMessage(msg, keyPair);
-  //        System.out.println("SignedMessage: " + signedMessage);
-  //    }
 }
+  // TODO: Remove. Only for testing
+  //@ReactMethod
+  //public static void loadCredentialsFromFile(String password, String filePath, Promise promise) throws Exception {
+  //  try {
+  //    Credentials cred = WalletUtils.loadCredentials(password, filePath);
+  //    ECKeyPair keyPair = cred.getEcKeyPair();
+  //    String address = cred.getAddress();
+  //    String privateKey = keyPair.getPrivateKey().toString(16);
+  //    String publicKey = keyPair.getPublicKey().toString(16);
+  //    Log.d(TAG, "getAddress: " + address);
+  //    Log.d(TAG, "privateKey: " + privateKey);
+  //    Log.d(TAG, "publicKey: " + publicKey);
+
+  //    promise.resolve(address);
+  //  } catch (Exception e) {
+  //    promise.reject(e);
+  //  }
+  //}

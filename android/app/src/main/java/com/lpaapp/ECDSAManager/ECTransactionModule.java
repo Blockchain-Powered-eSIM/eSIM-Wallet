@@ -1,4 +1,4 @@
-package com.lpaapp.Web3Manager;
+package com.lpaapp.ECDSAManager;
 
 import org.web3j.crypto.Credentials;
 import org.web3j.crypto.RawTransaction;
@@ -27,6 +27,9 @@ import com.facebook.react.bridge.WritableNativeMap;
 
 public class ECTransactionModule extends ReactContextBaseJavaModule {
 
+    private static final String NODE_PROVIDER_URL = "https://opt-sepolia.g.alchemy.com/v2/exbaDHVaccqlKu42xqkdxB1av48xGEp5";
+    //web3j instance connecting to the Ethereum network using node provider
+    private static final Web3j web3j = Web3j.build(new HttpService(NODE_PROVIDER_URL));
     private static ReactApplicationContext mReactContext;
 
     ECTransactionModule(ReactApplicationContext reactContext) {
@@ -39,18 +42,9 @@ public class ECTransactionModule extends ReactContextBaseJavaModule {
     return "ECTransactionManager"; // Name exposed to React Native
     }
 
-    private static final String NODE_PROVIDER_URL = "https://opt-sepolia.g.alchemy.com/v2/exbaDHVaccqlKu42xqkdxB1av48xGEp5";
-    //web3j instance connecting to the Ethereum network using node provider
-    private static final Web3j web3j = Web3j.build(new HttpService(NODE_PROVIDER_URL));
-
-    //decrypts the private key from a keystore file using the provided password
-    public static Credentials decryptPrivateKey(String keystorePath, String walletPassword) throws Exception {
-        return WalletUtils.loadCredentials(walletPassword, keystorePath);
-    }
-
     //creates and signs a transaction with the provided parameters, then sends it to the Ethereum network
     /*params
-     * - ECKeyPair (for_private_key)
+     * - ECDSA SECP256K1 Private Key
      * - recipient address (to)
      * - sender address (from)
      * - transaction value
@@ -60,7 +54,7 @@ public class ECTransactionModule extends ReactContextBaseJavaModule {
      * - nonce
      */
     @ReactMethod
-    public static void initiateTransaction(ECKeyPair ecKey, String to, String from, BigInteger value, String calldata, BigInteger gasPrice, BigInteger gasLimit, BigInteger nonce, Promise promise) {
+    public static void initiateTransaction(String privateKey, String to, String from, BigInteger value, String calldata, BigInteger gasPrice, BigInteger gasLimit, BigInteger nonce, Promise promise) {
         try {
             RawTransaction rawTransaction = RawTransaction.createTransaction(
                     nonce,
@@ -70,8 +64,6 @@ public class ECTransactionModule extends ReactContextBaseJavaModule {
                     value,
                     calldata
             );
-
-            privateKey = ecKey.getPrivateKey().toString(16);
 
             byte[] signedMessage = TransactionEncoder.signMessage(rawTransaction, privateKey);
             String hexValue = Numeric.toHexString(signedMessage);

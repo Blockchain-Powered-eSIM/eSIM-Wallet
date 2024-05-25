@@ -1,4 +1,4 @@
-package com.lpaapp.Web3Manager;
+package com.lpaapp.ECDSAManager;
 
 import androidx.annotation.NonNull;
 import com.facebook.react.ReactPackage;
@@ -10,11 +10,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class ECTransactionPackage implements ReactPackage {
+public class ECDSAManagerPackage implements ReactPackage {
     @NonNull
     @Override
     public List<NativeModule> createNativeModules(ReactApplicationContext reactContext) {
         List<NativeModule> modules = new ArrayList<>();
+        modules.add(new ECKeyManagementModule(reactContext));
         modules.add(new ECTransactionModule(reactContext));
         return modules;
     }

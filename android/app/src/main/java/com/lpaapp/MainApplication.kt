@@ -17,9 +17,8 @@ import com.facebook.soloader.SoLoader
 import com.lpaapp.EuiccBridge.EuiccManagerPackage
 import com.lpaapp.DeviceInfoBridge.SimDataPackage
 import com.lpaapp.IdentityManager.IdentityManagerPackage
-import com.lpaapp.ECKeyManager.ECKeyManagementPackage
+import com.lpaapp.ECDSAManager.ECDSAManagerPackage
 import com.lpaapp.KeyStoreBridge.KeyStorePackage
-import com.lpaapp.Web3Manager.ECTransactionPackage
 
 class MainApplication : Application(), ReactApplication {
 
@@ -32,9 +31,8 @@ class MainApplication : Application(), ReactApplication {
               add(EuiccManagerPackage())
               add(SimDataPackage())
               add(IdentityManagerPackage())
-              add(ECKeyManagementPackage())
+              add(ECDSAManagerPackage())
               add(KeyStorePackage())
-              add(ECTransactionPackage())
             }
 
         override fun getJSMainModuleName(): String = "index"
