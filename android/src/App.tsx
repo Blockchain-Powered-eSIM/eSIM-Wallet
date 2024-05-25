@@ -17,9 +17,9 @@ import {
     PermissionsAndroid,
 } from 'react-native';
 
-import {Button} from './components/Button';
-import {Modal} from './components/Modal';
-import {getData} from './endpoints/api_handles';
+import { Button } from './components/Button';
+import { Modal } from './components/Modal';
+import { getData } from './endpoints/api_handles';
 var RNFS = require('react-native-fs');
 
 import {MMKVLoader, useMMKVStorage} from 'react-native-mmkv-storage';
@@ -40,6 +40,10 @@ export default function App() {
   const [error, setError] = useState(null);
   const [permissionsGranted, setPermissionsGranted] = useState(false);
   const storageObj = new MMKVLoader().initialize();
+  const DEVICE_IDENTIFIER = "deviceIDKey";
+  const EC_PUBLIC_KEY = "ecPubKey";
+  const ENCRYPTED_EC_PRIVATE_KEY = "encryptPrivKey";
+  const appAlias = "TestAPP";
 
   const toggleModalVisibility = () => {
     setIsModalVisible(visible => !visible);
@@ -50,8 +54,8 @@ export default function App() {
   };
 
   const toggleTransactionModalVisibility = () => {
-      setIsTransactionModalVisible(visible => !visible);
-    };
+    setIsTransactionModalVisible(visible => !visible);
+  };
   // Store and retrieve data
   // TODO: Handle other datatypes
   const storeData = (key, value) => {
@@ -131,41 +135,39 @@ export default function App() {
         await NativeModules.IdentityManager.getAndroidID();
       console.log('Android_ID: ', androidID);
 
-      const retrievedHash = retrieveData(androidID);
+      const retrievedHash = retrieveData(DEVICE_IDENTIFIER);
       console.log('retrievedHash: ', retrievedHash);
-
-      await checkKeyStore();
 
       if (retrievedHash == null) {
         const uniqueIdentifier =
           await NativeModules.IdentityManager.generateIdentifier(androidID);
         console.log('uniqueIdentifier: ', uniqueIdentifier);
-        storeData(androidID, uniqueIdentifier);
+        storeData(DEVICE_IDENTIFIER, uniqueIdentifier);
 
-        return retrieveData(androidID);
-
+        return retrieveData(DEVICE_IDENTIFIER);
       } else {
-        return retrieveData(androidID);
+        return retrieveData(DEVICE_IDENTIFIER);
       }    
     } catch (error) {
       console.log('error: ', error);
     }
   };
 
-  const checkKeyStore = async () => {
+  const generateKeyStore = async () => {
     try {
-      const appAlias = 'TestAPP';
-      const {encrypted_key, msg} =
+      const {ecPublicKey, encrypted_key, msg} =
         await NativeModules.KeyStore.generateAndStoreECKeyPair(
             appAlias,
             'Test123',
             RNFS.DownloadDirectoryPath,
             );
+      console.log(ecPublicKey);
       console.log(msg);
       console.log(encrypted_key);
 
-      storeData(appAlias, encrypted_key);
-      console.log('Encrypted Key Securely Stored');
+      storeData(EC_PUBLIC_KEY, ecPublicKey);
+      storeData(ENCRYPTED_EC_PRIVATE_KEY, encrypted_key);
+      console.log('Keys Securely Stored');
 
       setEncryptedKey(encrypted_key);
       toggleKeyModalVisibility();
@@ -173,6 +175,15 @@ export default function App() {
       console.log('Error: ', error);
     }
   };
+
+  const getECPrivateKey = async() => {
+    try {
+      const private_key = await NativeModules.KeyStore.retrieveECPrivateKey(retrieveData(ENCRYPTED_EC_PRIVATE_KEY), appAlias);
+      return private_key;
+    } catch (error) {
+      console.log('Error: ', error);
+    }
+  }
 
   const handleKMM = async () => {
     try {
@@ -199,7 +210,7 @@ export default function App() {
   // Call the exposed method when the "Sign Transaction" button is pressed
   const handleSignTransaction = async () => {
     try {
-      const keystorePath = '/path/to/keystore/file';
+      const privateKey = await getECPrivateKey();
       const walletPassword = 'walletPassword';
       const to = '0xC479b44CF3Af681700F900ed7767154be43177e1';
       const from = '0x7E97763E973F4E3D3D347559BD7D812EB8EA88DA'; // Temporary
@@ -211,16 +222,16 @@ export default function App() {
 
       const transactionHash =
         await NativeModules.ECTransactionManager.initiateTransaction(
-          keystorePath,
-          walletPassword,
-          to,
-          from,
-          value,
-          calldata,
-          gasPrice,
-          gasLimit,
-          nonce,
-        );
+            privateKey,
+            walletPassword,
+            to,
+            from,
+            value,
+            calldata,
+            gasPrice,
+            gasLimit,
+            nonce,
+            );
 
       console.log('Transaction hash:', transactionHash);
       toggleTransactionModalVisibility();
@@ -245,7 +256,7 @@ export default function App() {
       </Modal.Footer>
       </Modal.Container>
       </Modal>
-      <Button title="Generate EC KeyPair" onPress={checkKeyStore} />
+      <Button title="Generate EC KeyPair" onPress={generateKeyStore} />
       <Modal isVisible={isKeyModalVisible}>
       <Modal.Container>
       <Modal.Header title="Encrypted Private Key" />
@@ -259,18 +270,18 @@ export default function App() {
       </Modal>
       <Button title="Sign Transaction" onPress={handleSignTransaction} />
       <Modal isVisible={isTransactionModalVisible}>
-              <Modal.Container>
-                <Modal.Header title="Transaction Details" />
-                <Modal.Body>
-                  <Text style={styles.text}>{"TEST-Tx"}</Text>
-                </Modal.Body>
-                <Modal.Footer>
-                  <Button title="Back" onPress={toggleTransactionModalVisibility} />
-                </Modal.Footer>
-              </Modal.Container>
-            </Modal>
-    </View>
-  );
+      <Modal.Container>
+      <Modal.Header title="Transaction Details" />
+      <Modal.Body>
+      <Text style={styles.text}>{"TEST-Tx"}</Text>
+      </Modal.Body>
+      <Modal.Footer>
+      <Button title="Back" onPress={toggleTransactionModalVisibility} />
+      </Modal.Footer>
+      </Modal.Container>
+      </Modal>
+      </View>
+      );
 }
 
 const styles = StyleSheet.create({
