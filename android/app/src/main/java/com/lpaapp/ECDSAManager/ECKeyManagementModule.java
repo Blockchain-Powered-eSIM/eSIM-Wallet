@@ -1,4 +1,4 @@
-package com.lpaapp.ECKeyManager;
+package com.lpaapp.ECDSAManager;
 
 import java.util.*;
 import java.io.File;

@@ -1,4 +1,4 @@
-package com.lpaapp.Web3Manager;
+package com.lpaapp.ECDSAManager;
 
 import org.web3j.crypto.Credentials;
 import org.web3j.crypto.RawTransaction;
