@@ -212,14 +212,16 @@ public class KeyStoreModule extends ReactContextBaseJavaModule {
       KeyPair RSAKey = generateRSAKeyPair(alias);
 
       byte[] ecPrivateKey = ecKey.getPrivateKey().toString(16).getBytes("UTF-8");
+      byte[] ecPublicKey = ecKey.getPublicKey().toString(16).getBytes("UTF-8");
 
       //Encrypt the EC private key
       byte[] encryptedECKey = encryptData(ecPrivateKey, RSAKey.getPublic());
 
       WritableMap result = new WritableNativeMap();
-      String base64EncryptedKey = Base64.encodeToString(encryptedECKey, Base64.DEFAULT);
-      result.putString("ecPublicKey", ecPublicKey);
-      result.putString("encrypted_key", base64EncryptedKey);
+      String base64EncryptedPrivateKey = Base64.encodeToString(encryptedECKey, Base64.DEFAULT);
+      String base64EncryptedPublicKey = Base64.encodeToString(ecPublicKey, Base64.DEFAULT);
+      result.putString("ecPublicKey", base64EncryptedPublicKey);
+      result.putString("encrypted_key", base64EncryptedPrivateKey);
       result.putString("msg", "Private Key Encrypted");
 
       promise.resolve(result);
@@ -231,13 +233,13 @@ public class KeyStoreModule extends ReactContextBaseJavaModule {
   @ReactMethod
   public void retrieveECPrivateKey(String encrypted_key, String appAlias, Promise promise){
     try {
-      byte[] formatted_key = Base64.getDecoder.decode(encrypted_key);
+      byte[] formatted_key = Base64.decode(encrypted_key, Base64.DEFAULT);
       byte[] ecPrivateKey = decryptData(formatted_key, retrieveKeyPair(appAlias).getPrivate());
       String privateKey = Base64.encodeToString(ecPrivateKey, Base64.DEFAULT);
       promise.resolve(privateKey);
 
     } catch (Exception e) {
-      promise.reject(TAG, "Could not get EC Private Key: ", e.getMessage());
+      promise.reject(TAG, "Could not get EC Private Key: " + e.getMessage());
     }
   }
 

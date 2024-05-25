@@ -241,7 +241,7 @@ public class ECKeyManagementModule extends ReactContextBaseJavaModule {
       promise.reject(e);
     }
   }
-
+}
   // TODO: Remove. Only for testing
   //@ReactMethod
   //public static void loadCredentialsFromFile(String password, String filePath, Promise promise) throws Exception {

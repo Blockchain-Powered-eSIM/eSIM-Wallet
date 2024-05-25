@@ -42,12 +42,6 @@ public class ECTransactionModule extends ReactContextBaseJavaModule {
     return "ECTransactionManager"; // Name exposed to React Native
     }
 
-
-    //decrypts the private key from a keystore file using the provided password
-    public static Credentials decryptPrivateKey(String keystorePath, String walletPassword) throws Exception {
-        return WalletUtils.loadCredentials(walletPassword, keystorePath);
-    }
-
     //creates and signs a transaction with the provided parameters, then sends it to the Ethereum network
     /*params
      * - ECDSA SECP256K1 Private Key
