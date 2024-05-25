@@ -50,7 +50,7 @@ import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.bridge.WritableNativeMap;
 
-import com.lpaapp.ECKeyManager.ECKeyManagementModule;
+import com.lpaapp.ECDSAManager.ECKeyManagementModule;
 
 public class KeyStoreModule extends ReactContextBaseJavaModule {
 
@@ -101,26 +101,48 @@ public class KeyStoreModule extends ReactContextBaseJavaModule {
     return cipher.doFinal(encryptedData);
   }
 
-  @ReactMethod
-  public void retrieveKeyPair(String alias, Promise promise) {
-    try {
-      KeyStore keyStore = KeyStore.getInstance(KEYSTORE_PROVIDER);
-      keyStore.load(null); 
+  private KeyPair retrieveKeyPair(String alias) throws Exception {
+    // Create and load the KeyStore instance
+    KeyStore keyStore = KeyStore.getInstance(KEYSTORE_PROVIDER);
+    keyStore.load(null);
 
-      KeyStore.Entry keyEntry = keyStore.getEntry(alias, null);
-      if (keyEntry instanceof KeyStore.PrivateKeyEntry) {
-        Certificate cert = keyStore.getCertificate(alias);
-        PublicKey publicKey = cert.getPublicKey();
-        PrivateKey privateKey = ((KeyStore.PrivateKeyEntry) keyEntry).getPrivateKey();
-        KeyPair retrievedKeyPair = new KeyPair(publicKey, privateKey);
-        promise.resolve(retrievedKeyPair);
-      } else {
-        promise.reject("KeyStore Entry corresponding to given alias is not a private key"); // or exception
-      } 
-    } catch (Exception e) {
-      promise.reject(TAG, "Exception encountered: " + e.getMessage());
+    // Retrieve the entry from the KeyStore
+    KeyStore.Entry keyEntry = keyStore.getEntry(alias, null);
+    if (keyEntry instanceof KeyStore.PrivateKeyEntry) {
+      // Extract public and private keys
+      Certificate cert = keyStore.getCertificate(alias);
+      PublicKey publicKey = cert.getPublicKey();
+      PrivateKey privateKey = ((KeyStore.PrivateKeyEntry) keyEntry).getPrivateKey();
+
+      // Return the key pair
+      return new KeyPair(publicKey, privateKey);
+    } else {
+      // Throw an exception if the entry is not a PrivateKeyEntry
+      throw new Exception("KeyStore Entry corresponding to given alias is not a private key");
     }
   }
+
+  // @TODO Remove this function, retreiving keys from secure element is not required from frontend
+  //  @ReactMethod
+  //  public void retrieveKeyPair(String alias, Promise promise) {
+  //    try {
+  //      KeyStore keyStore = KeyStore.getInstance(KEYSTORE_PROVIDER);
+  //      keyStore.load(null); 
+  //
+  //      KeyStore.Entry keyEntry = keyStore.getEntry(alias, null);
+  //      if (keyEntry instanceof KeyStore.PrivateKeyEntry) {
+  //        Certificate cert = keyStore.getCertificate(alias);
+  //        PublicKey publicKey = cert.getPublicKey();
+  //        PrivateKey privateKey = ((KeyStore.PrivateKeyEntry) keyEntry).getPrivateKey();
+  //        KeyPair retrievedKeyPair = new KeyPair(publicKey, privateKey);
+  //        promise.resolve(retrievedKeyPair);
+  //      } else {
+  //        promise.reject("KeyStore Entry corresponding to given alias is not a private key"); // or exception
+  //      } 
+  //    } catch (Exception e) {
+  //      promise.reject(TAG, "Exception encountered: " + e.getMessage());
+  //    }
+  //  }
 
   private X509Certificate generateSelfSignedCertificate(String alias, KeyPair ecKey) throws Exception {
 
@@ -181,7 +203,7 @@ public class KeyStoreModule extends ReactContextBaseJavaModule {
       if(keyStore.containsAlias(alias)){
         promise.reject(E_KEYSTORE_ALIAS_EXISTS, "There is already an entry in AndroidKeyStore against the given alias");
       }
-      
+
       //Generate EC Key Pair using bouncycastle
       String mnemonic = ECKeyManagementModule.generateBIP39Mnemonic();
       ECKeyPair ecKey = ECKeyManagementModule.generateECKeyPairFromMnemonic(mnemonic, password, directoryPath);
@@ -189,24 +211,35 @@ public class KeyStoreModule extends ReactContextBaseJavaModule {
       // Generate RSA Keys to encrypt the EC private key
       KeyPair RSAKey = generateRSAKeyPair(alias);
 
-      //Encrypt the EC private key
       byte[] ecPrivateKey = ecKey.getPrivateKey().toString(16).getBytes("UTF-8");
-      Log.d(TAG, "EC Private key: " + Arrays.toString(ecPrivateKey));
+      byte[] ecPublicKey = ecKey.getPublicKey().toString(16).getBytes("UTF-8");
 
+      //Encrypt the EC private key
       byte[] encryptedECKey = encryptData(ecPrivateKey, RSAKey.getPublic());
-      Log.d(TAG, "Encrypted EC Private key: " + Arrays.toString(encryptedECKey));
-
-      byte[] decryptedKey = decryptData(encryptedECKey, RSAKey.getPrivate());
-      Log.d(TAG, "Decrypted EC Private key: " + Arrays.toString(decryptedKey));
 
       WritableMap result = new WritableNativeMap();
-      String base64EncryptedKey = Base64.encodeToString(encryptedECKey, Base64.DEFAULT);
-      result.putString("encrypted_key", base64EncryptedKey);
+      String base64EncryptedPrivateKey = Base64.encodeToString(encryptedECKey, Base64.DEFAULT);
+      String base64EncryptedPublicKey = Base64.encodeToString(ecPublicKey, Base64.DEFAULT);
+      result.putString("ecPublicKey", base64EncryptedPublicKey);
+      result.putString("encrypted_key", base64EncryptedPrivateKey);
       result.putString("msg", "Private Key Encrypted");
 
       promise.resolve(result);
     } catch (Exception e) {
       promise.reject(TAG, "Exception encountered: " + e.getMessage());
+    }
+  }
+
+  @ReactMethod
+  public void retrieveECPrivateKey(String encrypted_key, String appAlias, Promise promise){
+    try {
+      byte[] formatted_key = Base64.decode(encrypted_key, Base64.DEFAULT);
+      byte[] ecPrivateKey = decryptData(formatted_key, retrieveKeyPair(appAlias).getPrivate());
+      String privateKey = Base64.encodeToString(ecPrivateKey, Base64.DEFAULT);
+      promise.resolve(privateKey);
+
+    } catch (Exception e) {
+      promise.reject(TAG, "Could not get EC Private Key: " + e.getMessage());
     }
   }
 
