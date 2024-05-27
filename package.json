@@ -14,10 +14,11 @@
     "test:unit": "jest"
   },
   "dependencies": {
-    "axios": "^1.6.8",
+    "axios": "^1.7.2",
     "babel-polyfill": "^6.26.0",
     "babel-register": "^6.26.0",
     "dotenv": "^16.4.5",
+    "dotenv-webpack": "^8.1.0",
     "react": "18.2.0",
     "react-native": "0.73.6",
     "react-native-fs": "^2.20.0",
@@ -32,6 +33,7 @@
     "@react-native/eslint-config": "0.73.2",
     "@react-native/metro-config": "0.73.5",
     "@react-native/typescript-config": "0.73.1",
+    "@types/dotenv-webpack": "^7.0.7",
     "@types/react": "^18.3.1",
     "@types/react-test-renderer": "18.3.0",
     "babel-jest": "^29.7.0",

@@ -3,10 +3,7 @@ import axios from 'axios';
 require('dotenv').config();
 
 // Configuration
-const { API_BASE_URL,
-  ESIMGO_ENDPOINT,
-  WALLET_ENDPOINT
-} = process.env;
+const {API_BASE_URL, ESIMGO_ENDPOINT, WALLET_ENDPOINT} = process.env;
 
 const PROVIDER_SERVICE_URL = `$(API_BASE_URL)/$(ESIMGO_ENDPOINT)`;
 const WALLET_SERVICE_URL = `$(API_BASE_URL)/$(WALLET_ENDPOINT)`;
@@ -28,22 +25,22 @@ const providerAPI = axios.create({
 });
 
 // Functions to handle requests and responses to endpoints
-export const getData = async (userId) => {
+export const getData = async userId => {
   try {
     const response = await walletAPI.get('/getData/$(userId)');
     return response.data;
   } catch (error) {
-    console.error("Error fetching data:", error);
+    console.error('Error fetching data:', error);
     throw error;
   }
 };
 
-export const getCatalogue = async (userId) => {
+export const getCatalogue = async () => {
   try {
     const response = await providerAPI.get('/catalogue');
     return response.data;
   } catch (error) {
-    console.error("Error fetching eSIMGo Catalogue:", error);
+    console.error('Error fetching eSIMGo Catalogue:', error);
     throw error;
   }
 };
