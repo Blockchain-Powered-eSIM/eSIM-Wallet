@@ -155,21 +155,31 @@ export default function App() {
 
   const generateKeyStore = async () => {
     try {
-      const {ecPublicKey, encrypted_key, msg} =
-        await NativeModules.KeyStore.generateAndStoreECKeyPair(
-            appAlias,
-            'Test123',
-            RNFS.DownloadDirectoryPath,
-            );
-      console.log(ecPublicKey);
-      console.log(msg);
-      console.log(encrypted_key);
+      const publicKey = retrieveData(EC_PUBLIC_KEY);
+      console.log('EC Public Key: ', publicKey);
 
-      storeData(EC_PUBLIC_KEY, ecPublicKey);
-      storeData(ENCRYPTED_EC_PRIVATE_KEY, encrypted_key);
-      console.log('Keys Securely Stored');
+      const privateKey = retrieveData(ENCRYPTED_EC_PRIVATE_KEY);
+      console.log('Encrypted EC Private Key: ', privateKey);
 
-      setEncryptedKey(encrypted_key);
+      if (publicKey == null || privateKey == null){
+        const {ecPublicKey, encrypted_key, msg} =
+          await NativeModules.KeyStore.generateAndStoreECKeyPair(
+              appAlias,
+              'Test123',
+              RNFS.DownloadDirectoryPath,
+              );
+        console.log('EC Public Key: ', ecPublicKey);
+        console.log(msg);
+        console.log('Encrypted Private Key: ', encrypted_key);
+
+        storeData(EC_PUBLIC_KEY, ecPublicKey);
+        storeData(ENCRYPTED_EC_PRIVATE_KEY, encrypted_key);
+        console.log('Keys Securely Stored');
+
+        setEncryptedKey(encrypted_key);
+      }
+
+      setEncryptedKey(privateKey);
       toggleKeyModalVisibility();
     } catch (error) {
       console.log('Error: ', error);
