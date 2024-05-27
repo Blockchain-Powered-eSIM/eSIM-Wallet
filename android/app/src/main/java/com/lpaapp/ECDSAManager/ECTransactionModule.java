@@ -65,7 +65,8 @@ public class ECTransactionModule extends ReactContextBaseJavaModule {
                     calldata
             );
 
-            byte[] signedMessage = TransactionEncoder.signMessage(rawTransaction, privateKey);
+            Credentials txnCredentials = Credentials.create(privateKey);      
+            byte[] signedMessage = TransactionEncoder.signMessage(rawTransaction, txnCredentials);
             String hexValue = Numeric.toHexString(signedMessage);
 
             //signed transaction is sent using ethSendRawTransaction
