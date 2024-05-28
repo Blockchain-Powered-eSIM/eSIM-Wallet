@@ -213,6 +213,7 @@ public class KeyStoreModule extends ReactContextBaseJavaModule {
 
       byte[] ecPrivateKey = ecKey.getPrivateKey().toString(16).getBytes("UTF-8");
       byte[] ecPublicKey = ecKey.getPublicKey().toString(16).getBytes("UTF-8");
+      String address = ECKeyManagementModule.deriveAddress(ecKey.getPublicKey());
 
       //Encrypt the EC private key
       byte[] encryptedECKey = encryptData(ecPrivateKey, RSAKey.getPublic());
@@ -222,6 +223,7 @@ public class KeyStoreModule extends ReactContextBaseJavaModule {
       String base64EncryptedPublicKey = Base64.encodeToString(ecPublicKey, Base64.DEFAULT);
       result.putString("ecPublicKey", base64EncryptedPublicKey);
       result.putString("encrypted_key", base64EncryptedPrivateKey);
+      result.putString("address", address);
       result.putString("msg", "Private Key Encrypted");
 
       promise.resolve(result);

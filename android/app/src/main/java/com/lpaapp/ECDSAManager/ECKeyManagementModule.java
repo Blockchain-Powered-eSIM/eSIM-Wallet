@@ -102,9 +102,8 @@ public class ECKeyManagementModule extends ReactContextBaseJavaModule {
     }
   }
 
-  @ReactMethod
   public static String deriveAddress(BigInteger publicKey) {
-    return "0x" + Keys.getAddress((publicKey));
+    return "0x" + Keys.getAddress(publicKey);
   }
 
   @ReactMethod

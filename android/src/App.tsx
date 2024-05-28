@@ -16,6 +16,7 @@ import {
   TouchableOpacity,
   PermissionsAndroid,
 } from 'react-native';
+import Config from 'react-native-config';
 
 import {Button} from './components/Button';
 import {Modal} from './components/Modal';
@@ -25,6 +26,7 @@ var RNFS = require('react-native-fs');
 import {MMKVLoader, useMMKVStorage} from 'react-native-mmkv-storage';
 
 import axios from 'axios';
+import {Image} from 'react-native';
 
 // import dotenv from 'dotenv';
 // dotenv.config({path: '../../.env'});
@@ -45,7 +47,7 @@ export default function App() {
   const [mapping, setMapping] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [identifier, setIdentifier] = useState('');
-  const [encryptedKey, setEncryptedKey] = useState('');
+  const [masterKeyStoreAddress, setMasterKeyStoreAddress] = useState('');
   const [isKeyModalVisible, setIsKeyModalVisible] = useState(false);
   const [isTransactionModalVisible, setIsTransactionModalVisible] =
     useState(false);
@@ -55,6 +57,8 @@ export default function App() {
 
   const storageObj = new MMKVLoader().initialize();
 
+  // console.log(Config);
+
   const [isPlanModalVisible, setPlanModalVisibility] = useState(false);
   const [isConfirmModalVisible, setConfirmModalVisibility] = useState(false);
   const [eSIMPlans, setEsimPlans] = useState<Plan[]>([]);
@@ -63,10 +67,17 @@ export default function App() {
   const [orgData, setOrgData] = useState<any>(null);
   const [isOrgModalVisible, setIsOrgModalVisible] = useState(false);
 
+  // const REACT_APP_eSIM_GO_API_KEY = process.env['REACT_APP_eSIM_GO_API_KEY'];
+
+  const [pngImage, setPngImage] = useState<string | null>(null);
+  const [isImageModalVisible, setIsImageModalVisible] = useState(false);
+
   const DEVICE_IDENTIFIER = 'deviceIDKey';
   const EC_PUBLIC_KEY = 'ecPubKey';
   const ENCRYPTED_EC_PRIVATE_KEY = 'encryptPrivKey';
   const appAlias = 'TestAPP';
+  const PURCHASE_RESPONSE = 'TestPurchasedESIM';
+  const MASTER_KEYSTORE_ADDRESS = 'ecAddress';
 
   const fetchOrgData = async () => {
     try {
@@ -75,7 +86,7 @@ export default function App() {
         maxBodyLength: Infinity,
         url: 'https://api.esim-go.com/v2.3/organisation',
         headers: {
-          'X-API-Key': process.env.eSIM_GO_API_KEY, // Replace with your actual API key
+          'X-API-Key': '', // Replace with your actual API key
           'Content-Type': 'application/json',
         },
       };
@@ -98,7 +109,7 @@ export default function App() {
     const testPlans = [
       {id: 1, description: 'Plan A - 5GB for $10'},
       {id: 2, description: 'Plan B - 10GB for $15'},
-      {id: 3, description: 'Plan C - Unlimited for $25'},
+      {id: 3, description: 'esim_1GB_7D_IN_V2'},
     ];
     setEsimPlans(testPlans);
     setPlanModalVisibility(true);
@@ -110,8 +121,29 @@ export default function App() {
     setConfirmModalVisibility(true);
   };
 
+  const fetchPngImage = async iccid => {
+    try {
+      let config = {
+        method: 'get',
+        maxBodyLength: Infinity,
+        url: `https://api.esim-go.com/v2.3/esims/${iccid}/qr`,
+        headers: {
+          'X-API-Key': '', // Replace with your actual API key
+          'Content-Type': 'application/json',
+        },
+      };
+
+      const response = await axios.request(config);
+      console.log('PNG Image Data:', response.data);
+      setPngImage(response.data);
+      setIsImageModalVisible(true);
+    } catch (error) {
+      console.log('Error fetching PNG image:', error);
+    }
+  };
+
   // Inside the handleConfirmPurchase function
-  const handleConfirmPurchase = () => {
+  const handleConfirmPurchase = async () => {
     if (selectedPlan) {
       console.log('Purchasing:', selectedPlan);
 
@@ -124,6 +156,7 @@ export default function App() {
           },
         ],
       });
+      console.log('[HandleConfirmPurchase-DATA]:', data);
 
       // Configure the API request
       let config = {
@@ -131,23 +164,30 @@ export default function App() {
         maxBodyLength: Infinity,
         url: 'https://api.esim-go.com/v2.3/esims/apply',
         headers: {
-          'X-API-Key': 'process.env.eSIM_GO_API_KEY', // Replace 'YOUR_API_KEY' with your actual API key
+          'X-API-Key': '', // Replace 'YOUR_API_KEY' with your actual API key
           'Content-Type': 'application/json',
         },
         data: data,
       };
-
       // Make the API request
-      axios
-        .request(config)
-        .then(response => {
-          console.log('Purchase successful:', response.data);
-          setConfirmModalVisibility(false); // Close the confirmation modal
-        })
-        .catch(error => {
-          console.error('Error purchasing eSIM:', error);
-          // Handle error scenario, display error message to the user, etc.
-        });
+      try {
+        const response = await axios.request(config);
+        console.log('---------------------');
+        console.log('[RESPONSE]', response);
+        console.log('Purchase successful:', response.data);
+        const Res = JSON.stringify(response.data);
+        storeData(PURCHASE_RESPONSE, Res);
+        setConfirmModalVisibility(false);
+
+        // Fetch the PNG image using the ICCID from the response
+        const iccid = response.data?.iccid;
+        if (iccid) {
+          await fetchPngImage(iccid);
+        }
+      } catch (error) {
+        console.error('Error purchasing eSIM:', error);
+        // Handle error scenario, display error message to the user, etc.
+      }
     } else {
       console.error('No plan selected.');
     }
@@ -260,8 +300,8 @@ export default function App() {
       } else {
         return retrieveData(DEVICE_IDENTIFIER);
       }
-    } catch (error) {
-      console.log('error: ', error);
+    } catch (e) {
+      console.log('error: ', e);
     }
   };
 
@@ -274,7 +314,7 @@ export default function App() {
       console.log('Encrypted EC Private Key: ', privateKey);
 
       if (publicKey == null || privateKey == null) {
-        const {ecPublicKey, encrypted_key, msg} =
+        const {ecPublicKey, encrypted_key, address, msg} =
           await NativeModules.KeyStore.generateAndStoreECKeyPair(
             appAlias,
             'Test123',
@@ -283,18 +323,20 @@ export default function App() {
         console.log('EC Public Key: ', ecPublicKey);
         console.log(msg);
         console.log('Encrypted Private Key: ', encrypted_key);
+        console.log('master keystore address: ', address);
 
         storeData(EC_PUBLIC_KEY, ecPublicKey);
         storeData(ENCRYPTED_EC_PRIVATE_KEY, encrypted_key);
+        storeData(MASTER_KEYSTORE_ADDRESS, address);
         console.log('Keys Securely Stored');
-
-        setEncryptedKey(encrypted_key);
       }
 
-      setEncryptedKey(privateKey);
+      const address = retrieveData(MASTER_KEYSTORE_ADDRESS);
+      console.log('address: ', address);
+      setMasterKeyStoreAddress(address);
       toggleKeyModalVisibility();
-    } catch (error) {
-      console.log('Error: ', error);
+    } catch (e) {
+      console.log('Error: ', e);
     }
   };
 
@@ -305,8 +347,8 @@ export default function App() {
         appAlias,
       );
       return private_key;
-    } catch (error) {
-      console.log('Error: ', error);
+    } catch (e) {
+      console.log('Error: ', e);
     }
   };
 
@@ -327,8 +369,8 @@ export default function App() {
         `${RNFS.DownloadDirectoryPath}/${fileName}`,
       );
       console.log('address: ', address);
-    } catch (error) {
-      console.log('Error: ', error);
+    } catch (e) {
+      console.log('Error: ', e);
     }
   };
 
@@ -360,8 +402,8 @@ export default function App() {
 
       console.log('Transaction hash:', transactionHash);
       toggleTransactionModalVisibility();
-    } catch (error) {
-      console.error('Error:', error);
+    } catch (e) {
+      console.error('Error:', e);
     }
   };
 
@@ -384,9 +426,9 @@ export default function App() {
       <Button title="Generate EC KeyPair" onPress={generateKeyStore} />
       <Modal isVisible={isKeyModalVisible}>
         <Modal.Container>
-          <Modal.Header title="Encrypted Private Key" />
+          <Modal.Header title="Master Keystore Address" />
           <Modal.Body>
-            <Text style={styles.text}>{encryptedKey}</Text>
+            <Text style={styles.text}>{masterKeyStoreAddress}</Text>
           </Modal.Body>
           <Modal.Footer>
             <Button title="Back" onPress={toggleKeyModalVisibility} />
@@ -453,6 +495,27 @@ export default function App() {
           </Modal.Body>
           <Modal.Footer>
             <Button title="Close" onPress={() => setIsOrgModalVisible(false)} />
+          </Modal.Footer>
+        </Modal.Container>
+      </Modal>
+      <Modal isVisible={isImageModalVisible}>
+        <Modal.Container>
+          <Modal.Header title="Your QR Code" />
+          <Modal.Body>
+            {pngImage ? (
+              <Image
+                source={{uri: `data:image/png;base64,${pngImage}`}}
+                style={{width: 200, height: 200}}
+              />
+            ) : (
+              <Text style={styles.text}>No image available</Text>
+            )}
+          </Modal.Body>
+          <Modal.Footer>
+            <Button
+              title="Close"
+              onPress={() => setIsImageModalVisible(false)}
+            />
           </Modal.Footer>
         </Modal.Container>
       </Modal>
