@@ -27,6 +27,9 @@ import {MMKVLoader, useMMKVStorage} from 'react-native-mmkv-storage';
 
 import axios from 'axios';
 import {Image} from 'react-native';
+// import https from 'follow-redirects/https';
+
+// import {encode} from 'base64-arraybuffer';
 
 // import dotenv from 'dotenv';
 // dotenv.config({path: '../../.env'});
@@ -46,6 +49,7 @@ interface Plan {
 export default function App() {
   const [mapping, setMapping] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [imagePlace, setImage] = useState('');
   const [identifier, setIdentifier] = useState('');
   const [masterKeyStoreAddress, setMasterKeyStoreAddress] = useState('');
   const [isKeyModalVisible, setIsKeyModalVisible] = useState(false);
@@ -121,7 +125,41 @@ export default function App() {
     setConfirmModalVisibility(true);
   };
 
-  const fetchPngImage = async iccid => {
+  // const fetchPngImage = async (iccid: string) => {
+  //   const options = {
+  //     method: 'GET',
+  //     hostname: 'api.esim-go.com',
+  //     path: `/v2.3/esims/${iccid}/qr`,
+  //     headers: {
+  //       'X-API-Key': '',
+  //       'Content-Type': 'application/json',
+  //     },
+  //     maxRedirects: 20,
+  //   };
+
+  //   const req = https.request(options, function (res) {
+  //     const chunks: Uint8Array[] = [];
+
+  //     res.on('data', function (chunk) {
+  //       chunks.push(chunk);
+  //     });
+
+  //     res.on('end', function () {
+  //       const body = Buffer.concat(chunks);
+  //       const imageBase64 = body.toString('base64');
+  //       setPngImage(imageBase64);
+  //       setIsImageModalVisible(true);
+  //     });
+
+  //     res.on('error', function (error) {
+  //       console.error(error);
+  //     });
+  //   });
+
+  //   req.end();
+  // };
+
+  const fetchPngImage = async (iccid: string) => {
     try {
       let config = {
         method: 'get',
@@ -134,8 +172,20 @@ export default function App() {
       };
 
       const response = await axios.request(config);
-      console.log('PNG Image Data:', response.data);
-      setPngImage(response.data);
+
+      const imageBase64 = response.data;
+      console.log('[QR_IMAGE_RESPONSE]:', imageBase64);
+
+      const path = RNFS.DownloadDirectoryPath + '/esim_qr.png';
+      RNFS.writeFile(path, response.data)
+        .then(success => {
+          console.log('File Written');
+        })
+        .catch(e => {
+          console.log(e);
+        });
+
+      setPngImage(imageBase64);
       setIsImageModalVisible(true);
     } catch (error) {
       console.log('Error fetching PNG image:', error);
@@ -179,11 +229,11 @@ export default function App() {
         storeData(PURCHASE_RESPONSE, Res);
         setConfirmModalVisibility(false);
 
-        // Fetch the PNG image using the ICCID from the response
-        const iccid = response.data?.iccid;
-        if (iccid) {
-          await fetchPngImage(iccid);
-        }
+        // // Fetch the PNG image using the ICCID from the response
+        // const iccid = response.data?.iccid;
+        // if (iccid) {
+        //   await fetchPngImage(iccid);
+        // }
       } catch (error) {
         console.error('Error purchasing eSIM:', error);
         // Handle error scenario, display error message to the user, etc.
@@ -411,6 +461,34 @@ export default function App() {
     <View style={styles.container}>
       <Text style={styles.title}>eSIM Wallet app</Text>
       <View style={styles.separator} />
+      {/* Modal for fetch QR */}
+      <Button
+        title="Fetch QR"
+        onPress={() => fetchPngImage('8943108165007773976')}
+      />
+      {/* Modal for displaying QR code */}
+      <Modal isVisible={isImageModalVisible}>
+        <Modal.Container>
+          <Modal.Header title="Your QR Code" />
+          <Modal.Body>
+            {pngImage ? (
+              <Image
+                source={{uri: `data:image/png;base64,${pngImage}`}}
+                style={{width: 200, height: 200}}
+              />
+            ) : (
+              <Text style={styles.text}>No image available</Text>
+            )}
+          </Modal.Body>
+          <Modal.Footer>
+            <Button
+              title="Close"
+              onPress={() => setIsImageModalVisible(false)}
+            />
+          </Modal.Footer>
+        </Modal.Container>
+      </Modal>
+      {/* Modal for fetch Unique ID */}
       <Button title="Fetch Unique ID" onPress={toggleModalVisibility} />
       <Modal isVisible={isModalVisible}>
         <Modal.Container>
