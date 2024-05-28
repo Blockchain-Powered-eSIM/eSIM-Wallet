@@ -20,6 +20,8 @@ import com.lpaapp.IdentityManager.IdentityManagerPackage
 import com.lpaapp.ECDSAManager.ECDSAManagerPackage
 import com.lpaapp.KeyStoreBridge.KeyStorePackage
 
+// import com.lugg.RNCConfig.RNCConfigPackage
+
 class MainApplication : Application(), ReactApplication {
 
   override val reactNativeHost: ReactNativeHost =
@@ -33,6 +35,7 @@ class MainApplication : Application(), ReactApplication {
               add(IdentityManagerPackage())
               add(ECDSAManagerPackage())
               add(KeyStorePackage())
+              // add(RNCConfigPackage())
             }
 
         override fun getJSMainModuleName(): String = "index"
