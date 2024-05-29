@@ -13,6 +13,7 @@ import {
   StyleSheet,
   Text,
   View,
+  Image,
   TouchableOpacity,
   PermissionsAndroid,
 } from 'react-native';
@@ -26,13 +27,9 @@ var RNFS = require('react-native-fs');
 import {MMKVLoader, useMMKVStorage} from 'react-native-mmkv-storage';
 
 import axios from 'axios';
-import {Image} from 'react-native';
-// import https from 'follow-redirects/https';
+import {unzip} from 'react-native-zip-archive';
 
-// import {encode} from 'base64-arraybuffer';
-
-// import dotenv from 'dotenv';
-// dotenv.config({path: '../../.env'});
+import {REACT_APP_eSIM_GO_API_KEY} from '@env';
 
 module.exports;
 
@@ -68,12 +65,13 @@ export default function App() {
   const [eSIMPlans, setEsimPlans] = useState<Plan[]>([]);
   const [selectedPlan, setSelectedPlan] = useState(null);
 
+  const [purchaseStatusMessage, setPurchaseStatusMessage] = useState('');
+  const [isPurchaseModalVisible, setIsPurchaseModalVisible] = useState(false);
+
   const [orgData, setOrgData] = useState<any>(null);
   const [isOrgModalVisible, setIsOrgModalVisible] = useState(false);
 
-  // const REACT_APP_eSIM_GO_API_KEY = process.env['REACT_APP_eSIM_GO_API_KEY'];
-
-  const [pngImage, setPngImage] = useState<string | null>(null);
+  const [imagePath, setImagePath] = useState(null);
   const [isImageModalVisible, setIsImageModalVisible] = useState(false);
 
   const DEVICE_IDENTIFIER = 'deviceIDKey';
@@ -90,7 +88,7 @@ export default function App() {
         maxBodyLength: Infinity,
         url: 'https://api.esim-go.com/v2.3/organisation',
         headers: {
-          'X-API-Key': '', // Replace with your actual API key
+          'X-API-Key': REACT_APP_eSIM_GO_API_KEY, // Replace with your actual API key
           'Content-Type': 'application/json',
         },
       };
@@ -98,7 +96,6 @@ export default function App() {
       const response = await axios.request(config); // Await Axios request
       const orgDetail = response.data?.organisations[0]?.productDescription;
 
-      // console.log(JSON.stringify(response.data));
       console.log(orgDetail);
       setOrgData(orgDetail);
       setIsOrgModalVisible(true);
@@ -125,70 +122,37 @@ export default function App() {
     setConfirmModalVisibility(true);
   };
 
-  // const fetchPngImage = async (iccid: string) => {
-  //   const options = {
-  //     method: 'GET',
-  //     hostname: 'api.esim-go.com',
-  //     path: `/v2.3/esims/${iccid}/qr`,
-  //     headers: {
-  //       'X-API-Key': '',
-  //       'Content-Type': 'application/json',
-  //     },
-  //     maxRedirects: 20,
-  //   };
-
-  //   const req = https.request(options, function (res) {
-  //     const chunks: Uint8Array[] = [];
-
-  //     res.on('data', function (chunk) {
-  //       chunks.push(chunk);
-  //     });
-
-  //     res.on('end', function () {
-  //       const body = Buffer.concat(chunks);
-  //       const imageBase64 = body.toString('base64');
-  //       setPngImage(imageBase64);
-  //       setIsImageModalVisible(true);
-  //     });
-
-  //     res.on('error', function (error) {
-  //       console.error(error);
-  //     });
-  //   });
-
-  //   req.end();
-  // };
-
-  const fetchPngImage = async (iccid: string) => {
+  const fetchPngImage = async (reference_id: string) => {
     try {
+      const zipPath = `${RNFS.DownloadDirectoryPath}/response.zip`;
+      const extractPath = `${RNFS.DownloadDirectoryPath}/extracted`;
+
       let config = {
         method: 'get',
         maxBodyLength: Infinity,
-        url: `https://api.esim-go.com/v2.3/esims/${iccid}/qr`,
+        url: `https://api.esim-go.com/v2.3/esims/assignments/?reference=${reference_id}`,
         headers: {
-          'X-API-Key': '', // Replace with your actual API key
+          'X-API-Key': REACT_APP_eSIM_GO_API_KEY, // Replace with your actual API key
           'Content-Type': 'application/json',
+          Accept: 'application/zip',
         },
       };
 
       const response = await axios.request(config);
 
-      const imageBase64 = response.data;
-      console.log('[QR_IMAGE_RESPONSE]:', imageBase64);
+      await RNFS.writeFile(zipPath, response.data, 'base64');
+      await unzip(zipPath, extractPath);
 
-      const path = RNFS.DownloadDirectoryPath + '/esim_qr.png';
-      RNFS.writeFile(path, response.data)
-        .then(success => {
-          console.log('File Written');
-        })
-        .catch(e => {
-          console.log(e);
-        });
+      const files = await RNFS.readDir(extractPath);
+      const pngFile = files.find(file => file.name.endsWith('.png'));
 
-      setPngImage(imageBase64);
-      setIsImageModalVisible(true);
+      if (pngFile) {
+        setImagePath(`file://${pngFile.path}`);
+      } else {
+        console.log('PNG image not found in the zip file');
+      }
     } catch (error) {
-      console.log('Error fetching PNG image:', error);
+      console.log('Error fetching the zip file : ', error);
     }
   };
 
@@ -200,26 +164,16 @@ export default function App() {
       // Prepare data for the API request
 
       let data = JSON.stringify({
-        type: "validate",
-        assign: false,
+        type: 'transaction',
+        assign: true,
         Order: [
           {
             type: 'bundle',
             quantity: 1,
             item: selectedPlan.description,
-          }
-        ]
+          },
+        ],
       });
-
-      // Request body for /esims/apply 
-      //let data = JSON.stringify({
-      //  bundles: [
-      //    {
-      //      name: selectedPlan.description, // Assuming the plan description is the name
-      //      startTime: new Date().toISOString(), // Assuming the purchase time is the current time
-      //    },
-      //  ],
-      //});
 
       console.log('[HandleConfirmPurchase-DATA]:', data);
 
@@ -229,7 +183,7 @@ export default function App() {
         maxBodyLength: Infinity,
         url: 'https://api.esim-go.com/v2.3/orders',
         headers: {
-          'X-API-Key': '', // Replace 'YOUR_API_KEY' with your actual API key
+          'X-API-Key': REACT_APP_eSIM_GO_API_KEY, // Replace 'YOUR_API_KEY' with your actual API key
           'Content-Type': 'application/json',
         },
         data: data,
@@ -238,11 +192,19 @@ export default function App() {
       try {
         const response = await axios.request(config);
         console.log('---------------------');
-        console.log('[RESPONSE]', response);
+        // console.log('[RESPONSE]', response);
         console.log('Purchase successful:', response.data);
+        const purchaseOderRef = response.data?.orderReference;
+        const purchaseStatusMessage = response.data?.statusMessage;
+        console.log('[PURCHASE-ORDER-REF]:', purchaseOderRef);
+        console.log('[PURCHASE-STATUS-MESSAGE]:', purchaseStatusMessage);
         const Res = JSON.stringify(response.data);
         storeData(PURCHASE_RESPONSE, Res);
         setConfirmModalVisibility(false);
+        setPurchaseStatusMessage(
+          purchaseStatusMessage || 'Purchase successful',
+        );
+        setIsPurchaseModalVisible(true);
 
         // // Fetch the PNG image using the ICCID from the response
         // const iccid = response.data?.iccid;
@@ -258,6 +220,16 @@ export default function App() {
     }
   };
 
+  // const handleOpenURL = ({url}: {url: string}) => {
+  //   // Extract the ICCID from the URL if present
+  //   const iccidMatch = url.match(/iccid=([A-Fa-f0-9]{19})/);
+  //   if (iccidMatch) {
+  //     const iccid = iccidMatch[1];
+  //     // Fetch and display the PNG image
+  //     fetchPngImage(iccid);
+  //   }
+  // };
+
   const handleCancelPurchase = () => {
     setConfirmModalVisibility(false);
   };
@@ -272,6 +244,10 @@ export default function App() {
 
   const toggleTransactionModalVisibility = () => {
     setIsTransactionModalVisible(visible => !visible);
+  };
+
+  const togglePurchaseModalVisibility = () => {
+    setIsPurchaseModalVisible(visible => !visible);
   };
 
   // Store and retrieve data
@@ -479,20 +455,20 @@ export default function App() {
       {/* Modal for fetch QR */}
       <Button
         title="Fetch QR"
-        onPress={() => fetchPngImage('8943108165007773976')}
+        onPress={() => fetchPngImage('d316bfe2-e465-4d66-a476-1efa85fb6abd')}
       />
       {/* Modal for displaying QR code */}
       <Modal isVisible={isImageModalVisible}>
         <Modal.Container>
           <Modal.Header title="Your QR Code" />
           <Modal.Body>
-            {pngImage ? (
+            {imagePath ? (
               <Image
-                source={{uri: `data:image/png;base64,${pngImage}`}}
+                source={{uri: imagePath}}
                 style={{width: 200, height: 200}}
               />
             ) : (
-              <Text style={styles.text}>No image available</Text>
+              <Text style={styles.text}>Loading image ...</Text>
             )}
           </Modal.Body>
           <Modal.Footer>
@@ -574,6 +550,20 @@ export default function App() {
           </Modal.Body>
           <Modal.Footer>
             <Button title="Yes" onPress={handleConfirmPurchase} />
+            <Modal isVisible={isPurchaseModalVisible}>
+              <Modal.Container>
+                <Modal.Header title="Purchase Details" />
+                <Modal.Body>
+                  <Text style={styles.text}>{purchaseStatusMessage}</Text>
+                </Modal.Body>
+                <Modal.Footer>
+                  <Button
+                    title="Back"
+                    onPress={togglePurchaseModalVisibility}
+                  />
+                </Modal.Footer>
+              </Modal.Container>
+            </Modal>
             <Button title="No" onPress={handleCancelPurchase} />
           </Modal.Footer>
         </Modal.Container>
@@ -588,27 +578,6 @@ export default function App() {
           </Modal.Body>
           <Modal.Footer>
             <Button title="Close" onPress={() => setIsOrgModalVisible(false)} />
-          </Modal.Footer>
-        </Modal.Container>
-      </Modal>
-      <Modal isVisible={isImageModalVisible}>
-        <Modal.Container>
-          <Modal.Header title="Your QR Code" />
-          <Modal.Body>
-            {pngImage ? (
-              <Image
-                source={{uri: `data:image/png;base64,${pngImage}`}}
-                style={{width: 200, height: 200}}
-              />
-            ) : (
-              <Text style={styles.text}>No image available</Text>
-            )}
-          </Modal.Body>
-          <Modal.Footer>
-            <Button
-              title="Close"
-              onPress={() => setIsImageModalVisible(false)}
-            />
           </Modal.Footer>
         </Modal.Container>
       </Modal>

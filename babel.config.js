@@ -4,12 +4,9 @@ module.exports = {
     [
       'module:react-native-dotenv',
       {
-        envName: 'REACT_APP_eSIM_GO_API_KEY',
+        envName: 'APP_ENV',
         moduleName: '@env',
         path: '.env',
-        safe: false,
-        allowUndefined: true,
-        verbose: false,
       },
     ],
   ],
