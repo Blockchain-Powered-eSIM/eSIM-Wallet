@@ -28,7 +28,8 @@
     "react-native-dotenv": "^3.4.11",
     "react-native-fs": "^2.20.0",
     "react-native-mmkv-storage": "^0.9.1",
-    "react-native-modal": "^13.0.1"
+    "react-native-modal": "^13.0.1",
+    "react-native-zip-archive": "^7.0.0"
   },
   "devDependencies": {
     "@babel/core": "^7.24.4",
