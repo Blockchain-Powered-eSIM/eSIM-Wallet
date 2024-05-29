@@ -198,21 +198,36 @@ export default function App() {
       console.log('Purchasing:', selectedPlan);
 
       // Prepare data for the API request
+
       let data = JSON.stringify({
-        bundles: [
+        type: "validate",
+        assign: false,
+        Order: [
           {
-            name: selectedPlan.description, // Assuming the plan description is the name
-            startTime: new Date().toISOString(), // Assuming the purchase time is the current time
-          },
-        ],
+            type: 'bundle',
+            quantity: 1,
+            item: selectedPlan.description,
+          }
+        ]
       });
+
+      // Request body for /esims/apply 
+      //let data = JSON.stringify({
+      //  bundles: [
+      //    {
+      //      name: selectedPlan.description, // Assuming the plan description is the name
+      //      startTime: new Date().toISOString(), // Assuming the purchase time is the current time
+      //    },
+      //  ],
+      //});
+
       console.log('[HandleConfirmPurchase-DATA]:', data);
 
       // Configure the API request
       let config = {
         method: 'post',
         maxBodyLength: Infinity,
-        url: 'https://api.esim-go.com/v2.3/esims/apply',
+        url: 'https://api.esim-go.com/v2.3/orders',
         headers: {
           'X-API-Key': '', // Replace 'YOUR_API_KEY' with your actual API key
           'Content-Type': 'application/json',
