@@ -31,8 +31,7 @@ import {Image} from 'react-native';
 
 // import {encode} from 'base64-arraybuffer';
 
-// import dotenv from 'dotenv';
-// dotenv.config({path: '../../.env'});
+import {REACT_APP_eSIM_GO_API_KEY} from '@env';
 
 module.exports;
 
@@ -90,7 +89,7 @@ export default function App() {
         maxBodyLength: Infinity,
         url: 'https://api.esim-go.com/v2.3/organisation',
         headers: {
-          'X-API-Key': '', // Replace with your actual API key
+          'X-API-Key': REACT_APP_eSIM_GO_API_KEY, // Replace with your actual API key
           'Content-Type': 'application/json',
         },
       };
@@ -131,7 +130,7 @@ export default function App() {
   //     hostname: 'api.esim-go.com',
   //     path: `/v2.3/esims/${iccid}/qr`,
   //     headers: {
-  //       'X-API-Key': '',
+  //       'X-API-Key': 'REACT_APP_eSIM_GO_API_KEY',
   //       'Content-Type': 'application/json',
   //     },
   //     maxRedirects: 20,
@@ -166,7 +165,7 @@ export default function App() {
         maxBodyLength: Infinity,
         url: `https://api.esim-go.com/v2.3/esims/${iccid}/qr`,
         headers: {
-          'X-API-Key': '', // Replace with your actual API key
+          'X-API-Key': 'REACT_APP_eSIM_GO_API_KEY', // Replace with your actual API key
           'Content-Type': 'application/json',
         },
       };
@@ -200,18 +199,18 @@ export default function App() {
       // Prepare data for the API request
 
       let data = JSON.stringify({
-        type: "validate",
+        type: 'validate',
         assign: false,
         Order: [
           {
             type: 'bundle',
             quantity: 1,
             item: selectedPlan.description,
-          }
-        ]
+          },
+        ],
       });
 
-      // Request body for /esims/apply 
+      // Request body for /esims/apply
       //let data = JSON.stringify({
       //  bundles: [
       //    {
@@ -229,7 +228,7 @@ export default function App() {
         maxBodyLength: Infinity,
         url: 'https://api.esim-go.com/v2.3/orders',
         headers: {
-          'X-API-Key': '', // Replace 'YOUR_API_KEY' with your actual API key
+          'X-API-Key': 'REACT_APP_eSIM_GO_API_KEY', // Replace 'YOUR_API_KEY' with your actual API key
           'Content-Type': 'application/json',
         },
         data: data,
