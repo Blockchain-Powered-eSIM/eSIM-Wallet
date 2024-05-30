@@ -17,17 +17,21 @@ import {
   TouchableOpacity,
   PermissionsAndroid,
 } from 'react-native';
+
 import Config from 'react-native-config';
 
 import {Button} from './components/Button';
 import {Modal} from './components/Modal';
 import {getData} from './endpoints/api_handles';
+
 var RNFS = require('react-native-fs');
 
 import {MMKVLoader, useMMKVStorage} from 'react-native-mmkv-storage';
 
 import axios from 'axios';
+import {AxiosRequestConfig} from 'axios';
 import {unzip} from 'react-native-zip-archive';
+import {encode} from 'base64-arraybuffer';
 
 import {REACT_APP_eSIM_GO_API_KEY} from '@env';
 
@@ -81,6 +85,38 @@ export default function App() {
   const PURCHASE_RESPONSE = 'TestPurchasedESIM';
   const MASTER_KEYSTORE_ADDRESS = 'ecAddress';
 
+  const requestMultiplePermission = async () => {
+    try {
+      await PermissionsAndroid.requestMultiple([
+        PermissionsAndroid.PERMISSIONS.READ_PHONE_STATE,
+        PermissionsAndroid.PERMISSIONS.READ_PHONE_NUMBERS,
+        PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+      ]).then(result => {
+        if (
+          result['android.permission.READ_PHONE_STATE'] &&
+          result['android.permission.READ_PHONE_NUMBERS'] &&
+          result['android.permission.WRITE_EXTERNAL_STORAGE'] &&
+          result['android.permission.READ_EXTERNAL_STORAGE'] === 'granted'
+        ) {
+          this.setState({permissionsGranted: true});
+        } else if (
+          result['android.permission.READ_PHONE_STATE'] ||
+          result['android.permission.READ_PHONE_NUMBERS'] ||
+          result['android.permission.WRITE_EXTERNAL_STORAGE'] ||
+          result['android.permission.READ_EXTERNAL_STORAGE'] ===
+            'never_ask_again'
+        ) {
+          this.refs.toast.show(
+            'Please Go into Settings -> Applications -> APP_NAME -> Permissions and Allow permissions to continue',
+          );
+        }
+      });
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
   const fetchOrgData = async () => {
     try {
       const config = {
@@ -127,7 +163,7 @@ export default function App() {
       const zipPath = `${RNFS.DownloadDirectoryPath}/response.zip`;
       const extractPath = `${RNFS.DownloadDirectoryPath}/extracted`;
 
-      let config = {
+      let config: AxiosRequestConfig = {
         method: 'get',
         maxBodyLength: Infinity,
         url: `https://api.esim-go.com/v2.3/esims/assignments/?reference=${reference_id}`,
@@ -136,18 +172,37 @@ export default function App() {
           'Content-Type': 'application/json',
           Accept: 'application/zip',
         },
+        responseType: 'arraybuffer',
       };
 
       const response = await axios.request(config);
 
-      await RNFS.writeFile(zipPath, response.data, 'base64');
+      if (response.status !== 200) {
+        console.error(`Error: Received status code ${response.status}`);
+        return;
+      }
+
+      console.log('Response received');
+
+      // Convert the array buffer to a base64 string
+      const base64Data = encode(response.data);
+      console.log('Data encoded to base64');
+
+      // Save the response as a ZIP file
+      await RNFS.writeFile(zipPath, base64Data, 'base64');
+      console.log('ZIP file written to', zipPath);
+
+      // Extract the contents of the ZIP file
       await unzip(zipPath, extractPath);
+      console.log('ZIP file extracted to', extractPath);
 
       const files = await RNFS.readDir(extractPath);
       const pngFile = files.find(file => file.name.endsWith('.png'));
 
       if (pngFile) {
+        console.log('PNG image found:', pngFile.path);
         setImagePath(`file://${pngFile.path}`);
+        setIsImageModalVisible(true);
       } else {
         console.log('PNG image not found in the zip file');
       }
@@ -269,31 +324,6 @@ export default function App() {
     }
   };
 
-  const requestPhoneStatePermission = async () => {
-    try {
-      await PermissionsAndroid.requestMultiple([
-        PermissionsAndroid.PERMISSIONS.READ_PHONE_STATE,
-        PermissionsAndroid.PERMISSIONS.READ_PHONE_NUMBERS,
-      ]).then(result => {
-        if (
-          result['android.permission.READ_PHONE_STATE'] &&
-          result['android.permission.READ_PHONE_NUMBERS'] === 'granted'
-        ) {
-          this.setState({permissionsGranted: true});
-        } else if (
-          result['android.permission.READ_PHONE_STATE'] ||
-          result['android.permission.READ_PHONE_NUMBERS'] === 'never_ask_again'
-        ) {
-          this.refs.toast.show(
-            'Please Go into Settings -> Applications -> APP_NAME -> Permissions and Allow permissions to continue',
-          );
-        }
-      });
-    } catch (err) {
-      console.log(err);
-    }
-  };
-
   // Template to get data associated to device identifier from database
   //useEffect(() => {
   //    const fetchData = async () => {
@@ -311,7 +341,7 @@ export default function App() {
   useEffect(() => {
     console.log('UseEffect Asking permission');
     (async () => {
-      await requestPhoneStatePermission();
+      await requestMultiplePermission();
     })();
   }, []);
 
