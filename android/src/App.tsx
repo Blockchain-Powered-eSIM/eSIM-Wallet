@@ -261,11 +261,11 @@ export default function App() {
         );
         setIsPurchaseModalVisible(true);
 
-        // // Fetch the PNG image using the ICCID from the response
-        // const iccid = response.data?.iccid;
-        // if (iccid) {
-        //   await fetchPngImage(iccid);
-        // }
+        if (purchaseOderRef) {
+          await fetchPngImage(purchaseOderRef);
+        } else {
+          console.log('Problem in fetching QR');
+        }
       } catch (error) {
         console.error('Error purchasing eSIM:', error);
         // Handle error scenario, display error message to the user, etc.
@@ -485,7 +485,7 @@ export default function App() {
       {/* Modal for fetch QR */}
       <Button
         title="Fetch QR"
-        onPress={() => fetchPngImage('d316bfe2-e465-4d66-a476-1efa85fb6abd')}
+        onPress={() => fetchPngImage('purchaseaOrderRef')}
       />
       {/* Modal for displaying QR code */}
       <Modal isVisible={isImageModalVisible}>

@@ -16,6 +16,7 @@ Install node and watchman. Make sure to use Node 18 or higher version. Watchman,
 brew install node
 brew install watchman
 ```
+
 We recommend installing the OpenJDK distribution Azul Zulu.
 
 ```sh
@@ -64,7 +65,7 @@ export PATH=$PATH:$ANDROID_HOME/emulator
 export PATH=$PATH:$ANDROID_HOME/platform-tools
 ```
 
-then run 
+then run
 
 ```sh
 source ~/.zshrc
@@ -83,7 +84,8 @@ https://github.com/Blockchain-Powered-eSIM/eSIM-Wallet.git
 This project uses React Native's built-in command line interface. Rather than install and manage a specific version of the CLI globally, we recommend accessing the current version at runtime using `npx`, which ships with Node.js. With `npx react-native <command>`, the current stable version of the CLI will be downloaded and executed when the command is run.
 
 > Please remove any globally installed react-native-cli package previously as it may cause unexpected issues
-> ```sh 
+>
+> ```sh
 > npm uninstall -g react-native-cli @react-native-community/cli
 > ```
 
@@ -114,23 +116,11 @@ and then press `a` to run on Android
 
 #### Expected output:
 
-```
- LOG  UseEffect Asking permission
- LOG  phNumber:  +15551234567
- LOG  retrievedHash:  null
- LOG  uniqueIdentifier:  7a8531a11075593c48b46867280656af40bd44f2d2bc4d6c51c0de91e8c337d5
- LOG  Private Key Encrypted
- LOG  eSJent1PDOHO36OJk3jyovoyicFW0v/cowrFQ0KJAf3Du1/k1W3ilgZ/SCyV81jP/4OM22CLOPax
- QqMao22tFm4T/7DY+zdUi6GLNecLhF6t2xhb2+Eerf1SZ2QLAlZ0sQYGB5Tqgi/Le4iwE+JMZ7ky
- wrkGTM0GUsAitn7jMuGh6T2tKo0j5zeg1BLD4r9jTIMLK3eoKxsydwe6PTHqbZoxx8MBm6d2gdkk
- k3/hici8YrFm0+dxfzILK9vbYGy86kmIvjosisRzSjnRmsFqUO3F1BeGm+tjfNR34Icz8kvIbz4x
- ZK+58/aA/9KTPNyrbmIKTeMSlmluJe4qaZUsnw==
- LOG  Encrypted Key Securely Stored
-```
+![image options](./assets/TemrinalScreenGrab.png)
 
-https://github.com/ManulParihar/LPA/assets/95626013/22823f13-bf1a-4b2e-91a7-c61307d05eed
+[![Video Title](https://img.youtube.com/vi/CF9fWZBnfUc/0.jpg)](https://www.youtube.com/watch?v=CF9fWZBnfUc)
 
-<img width="1470" alt="ADBLogcatOutput" src="https://github.com/ManulParihar/LPA/assets/95626013/e07b40f4-7596-4cef-aa9f-d3fab3c144e2">
+[![Video Title](https://img.youtube.com/vi/P9Hwydr5FeU/0.jpg)](https://www.youtube.com/watch?v=P9Hwydr5FeU)
 
 ## Test Environment
 
@@ -144,44 +134,24 @@ Refer to [package.json](https://github.com/Blockchain-Powered-eSIM/eSIM-Wallet/b
 
 Setup and execution instructions using Detox for end-to-end (E2E) testing and Jest for unit testing is laid out [here](https://github.com/Blockchain-Powered-eSIM/eSIM-Wallet/blob/main/e2e/README.md).
 
-## Permissions required for Android
-
-### List of core android services used in the project:
-
-- https://developer.android.com/reference/android/telephony/euicc/EuiccManager#downloadSubscription
-- https://developer.android.com/reference/android/telephony/TelephonyManager
-- https://developer.android.com/reference/android/telephony/SubscriptionManager
-- https://developer.android.com/reference/android/telephony/SubscriptionInfo
-
-### Add these permissions in your Android Manifest if it doesn't exist:
-
-```xml
-    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
-    <uses-permission android:name="android.permission.READ_PHONE_NUMBERS"/>
-    <uses-permission android:name="android.permission.READ_PRECISE_PHONE_STATE"/>
-    <uses-permission android:name="android.permission.READ_PRIVILEGED_PHONE_STATE"/>
-    <uses-permission android:name="android.permission.WRITE_EMBEDDED_SUBSCRIPTIONS"/>
-```
-
-eSIM services provided by the EuiccManager API needs either **carrier privileges** for regular apps or **READ_PRIVILEGED_PHONE_STATE** for system apps on android.
-For more details about these permissions reference
-
-- https://developer.android.com/reference/android/Manifest.permission#READ_PRECISE_PHONE_STATE
-- https://source.android.com/docs/core/connect/esim-overview#carrier-privileges
-
 ## Android Native Modules
 
 ### [DeviceInfoBridge](https://github.com/Blockchain-Powered-eSIM/eSIM-Wallet/blob/main/android/app/src/main/java/com/lpaapp/DeviceInfoBridge/README.md)
+
 The 'DeviceInfoBridge' provides functionality to React Native applications to interact with SIM card data on Android devices. It allows the retrieval of SIM card information, eSIM support checks, and eSIM setup functionalities (given relevant permissions are given to the application).
 
 ### [ECKeyManager](https://github.com/Blockchain-Powered-eSIM/eSIM-Wallet/blob/main/android/app/src/main/java/com/lpaapp/ECKeyManager/README.md)
+
 This native module exposes java functions and react methods that deal with the generation and management of ECDSA keys. To generate Ethereum keys, the native module uses `Web3j` and `BouncyCastle` libraries. The EC key pair is generated using the `secp256k1` EC.
 
 ### [EuiccBridge](https://github.com/Blockchain-Powered-eSIM/eSIM-Wallet/blob/main/android/app/src/main/java/com/lpaapp/EuiccBridge/README.md)
+
 The `EuiccBridge` provides an interface for React Native applications to interact with the embedded Universal Integrated Circuit Card (eUICC).
 
 ### [IdentityManager](https://github.com/Blockchain-Powered-eSIM/eSIM-Wallet/blob/main/android/app/src/main/java/com/lpaapp/IdentityManager/README.md)
+
 The `IdentityManager` provides functionalities to React Native applications to interact with device and subscriber identity information on Android devices. It allows the retrieval of phone numbers for the default SIM, screen resolution, and generates a unique identifier using secure hashing mechanisms.
 
 ### [KeyStoreBridge](https://github.com/Blockchain-Powered-eSIM/eSIM-Wallet/blob/main/android/app/src/main/java/com/lpaapp/KeyStoreBridge/README.md)
+
 The `KeyStoreBridge` provides secure key management (`RSA` and `ECDSA`) functionalities within a React Native application, leveraging Android's native KeyStore system to generate, store, and manage cryptographic keys and certificates. This module is specifically tailored for Android devices and offers methods to securely handle encryption keys and perform encryption/decryption operations.
