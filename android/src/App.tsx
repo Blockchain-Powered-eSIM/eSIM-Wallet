@@ -34,6 +34,7 @@ import {unzip} from 'react-native-zip-archive';
 import {encode} from 'base64-arraybuffer';
 
 import {REACT_APP_eSIM_GO_API_KEY} from '@env';
+import {PROXY_SERVER_ENDPOINT} from '@env';
 
 module.exports;
 
@@ -77,6 +78,9 @@ export default function App() {
 
   const [imagePath, setImagePath] = useState(null);
   const [isImageModalVisible, setIsImageModalVisible] = useState(false);
+
+  const [isCatalogueModalVisible, setCatalogueModalVisibility] =
+    useState(false);
 
   const DEVICE_IDENTIFIER = 'deviceIDKey';
   const EC_PUBLIC_KEY = 'ecPubKey';
@@ -303,6 +307,14 @@ export default function App() {
 
   const togglePurchaseModalVisibility = () => {
     setIsPurchaseModalVisible(visible => !visible);
+  };
+
+  const handleCataloguePress = () => {
+    setCatalogueModalVisibility(true);
+  };
+
+  const hideCatalogueModal = () => {
+    setCatalogueModalVisibility(false);
   };
 
   // Store and retrieve data
@@ -595,6 +607,51 @@ export default function App() {
               </Modal.Container>
             </Modal>
             <Button title="No" onPress={handleCancelPurchase} />
+          </Modal.Footer>
+        </Modal.Container>
+      </Modal>
+      <Button title="Catalogue" onPress={handleCataloguePress} />
+      {/* Modal for displaying regions */}
+      <Modal isVisible={isCatalogueModalVisible}>
+        <Modal.Container>
+          <Modal.Header title="REGIONS" />
+          <Modal.Body>
+            <TouchableOpacity style={styles.regionItem}>
+              <Text>Global</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.regionItem}>
+              <Text>Antarctica</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.regionItem}>
+              <Text>Asia</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.regionItem}>
+              <Text>Europe</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.regionItem}>
+              <Text>Asia</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.regionItem}>
+              <Text>Africa</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.regionItem}>
+              <Text>Middle East</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.regionItem}>
+              <Text>North America</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.regionItem}>
+              <Text>LATAM</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.regionItem}>
+              <Text>Oceania</Text>
+            </TouchableOpacity>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button
+              title="Close"
+              onPress={() => setCatalogueModalVisibility(false)}
+            />
           </Modal.Footer>
         </Modal.Container>
       </Modal>

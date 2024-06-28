@@ -10,8 +10,8 @@ This README provides an overview of the testing setup and execution process usin
 
 ### Installation
 
-1. Clone the repository: `git clone https://github.com/Blockchain-Powered-eSIM/LPA`
-2. Navigate to the project directory: `cd LPA`
+1. Clone the repository: `git clone https://github.com/Blockchain-Powered-eSIM/eSIM-Wallet`
+2. Navigate to the project directory: `cd eSIM-Wallet`
 3. Install dependencies: `npm install`
 
 ### Configuration
@@ -20,6 +20,8 @@ This README provides an overview of the testing setup and execution process usin
 - Jest configuration: Configure Jest in the `e2e/jest.config.js` and `base.jest.config.js` files for unit and E2E testing settings.
 
 _Make sure to run the app before running test because because of different emulator settings_
+
+- Make sure you choose one of the available emulators: Pixel*6_Pro_API_34*
 
 ## Running Tests
 
@@ -39,38 +41,44 @@ _Make sure to run the app before running test because because of different emula
 ### Expected Results
 
 ```
-> LPAapp@0.0.1 test
+> eSIM-Wallet@0.0.1 test
 > detox test --configuration android.emu.debug
 
-09:34:03.799 detox[78599] B jest --config e2e/jest.config.js
-09:34:06.951 detox[78600] i firstTest.spec.js is assigned to emulator-5554 (Pixel_3a_API_34_extension_level_7_arm64-v8a)
-09:34:06.953 detox[78600] i App Launch Test: should launch the app successfully
-09:34:09.312 detox[78600] i App Launch Test: should launch the app successfully [OK]
+18:43:10.127 detox[19993] B jest --config e2e/jest.config.js
+18:43:13.241 detox[19996] i firstTest.spec.js is assigned to emulator-5554 (Pixel_6_Pro_API_34)
+18:43:13.243 detox[19996] i App Launch Test: should launch the app successfully
+18:43:16.563 detox[19996] i App Launch Test: should launch the app successfully [OK]
 
-09:34:09.313 detox[78600] i Modal Visibility Test: should initially hide the modal
-09:34:09.444 detox[78600] i Modal Visibility Test: should initially hide the modal [OK]
+18:43:16.565 detox[19996] i Modal Visibility Test: should initially hide the modal
+18:43:16.700 detox[19996] i Modal Visibility Test: should initially hide the modal [OK]
 
-09:34:09.445 detox[78600] i Unique ID Fetch Test: should fetch and display unique ID in modal
-09:34:10.922 detox[78600] i Unique ID Fetch Test: should fetch and display unique ID in modal [OK]
+18:43:16.701 detox[19996] i Unique ID Fetch Test: should fetch and display unique ID in modal
+18:43:18.248 detox[19996] i Unique ID Fetch Test: should fetch and display unique ID in modal [OK]
 
-09:34:10.924 detox[78600] i Modal Dismissal Test: should dismiss the modal when "Back" button is pressed
-09:34:12.092 detox[78600] i Modal Dismissal Test: should dismiss the modal when "Back" button is pressed [OK]
+18:43:18.249 detox[19996] i Modal Dismissal Test: should dismiss the modal when "Back" button is pressed
+18:43:19.910 detox[19996] i Modal Dismissal Test: should dismiss the modal when "Back" button is pressed [OK]
 
- PASS  e2e/firstTest.spec.js (7.712 s)
+18:43:19.911 detox[19996] i Generate EC KeyPair Test: should generate and display EC KeyPair
+18:43:23.324 detox[19996] i Generate EC KeyPair Test: should generate and display EC KeyPair [OK]
+
+ PASS  e2e/firstTest.spec.js (12.573 s)
   App Launch Test
-    ✓ should launch the app successfully (2358 ms)
+    ✓ should launch the app successfully (3320 ms)
   Modal Visibility Test
-    ✓ should initially hide the modal (131 ms)
+    ✓ should initially hide the modal (134 ms)
   Unique ID Fetch Test
-    ✓ should fetch and display unique ID in modal (1476 ms)
+    ✓ should fetch and display unique ID in modal (1547 ms)
   Modal Dismissal Test
-    ✓ should dismiss the modal when "Back" button is pressed (1167 ms)
+    ✓ should dismiss the modal when "Back" button is pressed (1661 ms)
+  Generate EC KeyPair Test
+    ✓ should generate and display EC KeyPair (3412 ms)
 
 Test Suites: 1 passed, 1 total
-Tests:       4 passed, 4 total
+Tests:       5 passed, 5 total
 Snapshots:   0 total
-Time:        7.783 s, estimated 8 s
+Time:        12.639 s, estimated 64 s
 Ran all test suites.
+
 ```
 
 ## Troubleshooting
