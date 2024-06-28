@@ -10,8 +10,8 @@ This README provides an overview of the testing setup and execution process usin
 
 ### Installation
 
-1. Clone the repository: `git clone https://github.com/Blockchain-Powered-eSIM/LPA`
-2. Navigate to the project directory: `cd LPA`
+1. Clone the repository: `git clone https://github.com/Blockchain-Powered-eSIM/eSIM-Wallet`
+2. Navigate to the project directory: `cd eSIM-Wallet`
 3. Install dependencies: `npm install`
 
 ### Configuration
@@ -20,6 +20,8 @@ This README provides an overview of the testing setup and execution process usin
 - Jest configuration: Configure Jest in the `e2e/jest.config.js` and `base.jest.config.js` files for unit and E2E testing settings.
 
 _Make sure to run the app before running test because because of different emulator settings_
+
+- Make sure you choose one of the available emulators: Pixel_6_Pro_API_34_
 
 ## Running Tests
 
