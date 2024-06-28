@@ -34,6 +34,7 @@ import {unzip} from 'react-native-zip-archive';
 import {encode} from 'base64-arraybuffer';
 
 import {REACT_APP_eSIM_GO_API_KEY} from '@env';
+import {PROXY_SERVER_ENDPOINT} from '@env';
 
 module.exports;
 
