@@ -21,7 +21,7 @@ This README provides an overview of the testing setup and execution process usin
 
 _Make sure to run the app before running test because because of different emulator settings_
 
-- Make sure you choose one of the available emulators: Pixel_6_Pro_API_34_
+- Make sure you choose one of the available emulators: Pixel*6_Pro_API_34*
 
 ## Running Tests
 
